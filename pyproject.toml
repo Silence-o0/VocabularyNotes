@@ -1,0 +1,32 @@
+[project]
+name = "vocabularynotes"
+version = "0.1.0"
+description = "An application for managing your own e-dictionary"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.0",
+]
+
+[tool.ruff.lint]
+select = [
+    "A",      # flake8-builtins
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions 
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "I",      # isort 
+    "N",      # pep8-naming 
+    "W",      # pycodestyle warnings 
+    "RSE",    # flake8-raise 
+    "DTZ",    # flake8-datetimez 
+    "T20",    # flake8-print 
+    "PTH",    # flake8-use-pathlib 
+    "PT",     # flake8-pytest-style 
+    "FAST",   # flake8-fastapi 
+    "RUF",    # Ruff own rules
+]
+
