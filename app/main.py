@@ -1,6 +1,9 @@
+from dotenv import load_dotenv
 from fastapi import FastAPI
 
-from app.routers import users
+load_dotenv()
+
+from app.routers import users  # noqa: E402
 
 app = FastAPI()
 
