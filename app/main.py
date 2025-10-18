@@ -1,8 +1,10 @@
+from dotenv import load_dotenv
 from fastapi import FastAPI
+
+load_dotenv()
+
+from app.routers import users  # noqa: E402
 
 app = FastAPI()
 
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+app.include_router(users.router)
