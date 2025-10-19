@@ -2,7 +2,16 @@ import uuid
 from datetime import datetime
 from enum import IntEnum
 
-from sqlalchemy import TIMESTAMP, Enum, MetaData, func, text
+from sqlalchemy import (
+    TIMESTAMP,
+    Enum,
+    ForeignKey,
+    Integer,
+    MetaData,
+    PrimaryKeyConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -10,6 +19,7 @@ from sqlalchemy.orm import (
     MappedAsDataclass,
     declared_attr,
     mapped_column,
+    relationship,
 )
 
 naming_convention = {
@@ -40,9 +50,9 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=lambda: uuid.uuid4, init=False
     )
-    username: Mapped[str | None] = mapped_column(nullable=False, unique=True)
-    email: Mapped[str | None] = mapped_column(nullable=False, unique=True)
-    password: Mapped[str | None] = mapped_column(nullable=False)
+    username: Mapped[str] = mapped_column(nullable=False, unique=True)
+    email: Mapped[str] = mapped_column(nullable=False, unique=True)
+    password: Mapped[str] = mapped_column(nullable=False)
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, name="role_enum", values_callable=lambda x: [e.name for e in x]),
         default=UserRole.UnauthorizedUser,
@@ -54,3 +64,23 @@ class User(Base):
     full_access_deadline: Mapped[datetime] = mapped_column(
         TIMESTAMP, server_default=text("(now() + interval '356 days')"), init=False
     )
+
+    dict_lists: Mapped[list["DictList"]] = relationship(
+        "DictList", back_populates="user", cascade="all, delete-orphan", init=False
+    )
+
+
+class DictList(Base):
+    id: Mapped[int] = mapped_column(Integer, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(default="General", nullable=False)
+    max_words_limit: Mapped[int | None] = mapped_column(default=200)
+    created: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), server_default=func.now(), init=False
+    )
+
+    __table_args__ = (PrimaryKeyConstraint("id", "user_id", name="dictlist_pk"),)
+
+    user: Mapped["User"] = relationship("User", back_populates="dict_lists", init=False)
