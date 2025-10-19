@@ -1,6 +1,8 @@
 import uuid
+from datetime import datetime
+from enum import IntEnum
 
-from sqlalchemy import MetaData
+from sqlalchemy import TIMESTAMP, Enum, MetaData, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -19,6 +21,13 @@ naming_convention = {
 }
 
 
+class UserRole(IntEnum):
+    Admin = 4
+    FullAccessUser = 3
+    AuthorizedUser = 2
+    UnauthorizedUser = 1
+
+
 class Base(MappedAsDataclass, DeclarativeBase):
     metadata = MetaData(naming_convention=naming_convention)
 
@@ -29,6 +38,19 @@ class Base(MappedAsDataclass, DeclarativeBase):
 
 class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, init=False, default=uuid.uuid4
+        UUID(as_uuid=True), primary_key=True, default=lambda: uuid.uuid4, init=False
     )
-    username: Mapped[str] = mapped_column(nullable=False, unique=True)
+    username: Mapped[str | None] = mapped_column(nullable=False, unique=True)
+    email: Mapped[str | None] = mapped_column(nullable=False, unique=True)
+    password: Mapped[str | None] = mapped_column(nullable=False)
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole, name="role_enum", values_callable=lambda x: [e.name for e in x]),
+        default=UserRole.UnauthorizedUser,
+        init=False,
+    )
+    created: Mapped[datetime] = mapped_column(
+        TIMESTAMP, server_default=func.now(), init=False
+    )
+    full_access_deadline: Mapped[datetime] = mapped_column(
+        TIMESTAMP, server_default=text("(now() + interval '356 days')"), init=False
+    )
