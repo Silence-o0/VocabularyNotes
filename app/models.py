@@ -3,12 +3,16 @@ from datetime import datetime
 from enum import IntEnum
 
 from sqlalchemy import (
+    ARRAY,
     TIMESTAMP,
+    Column,
     Enum,
     ForeignKey,
     Integer,
     MetaData,
     PrimaryKeyConstraint,
+    String,
+    Table,
     func,
     text,
 )
@@ -30,6 +34,8 @@ naming_convention = {
     "pk": "pk_%(table_name)s",
 }
 
+UTC_NOW = func.timezone("utc", func.now())
+
 
 class UserRole(IntEnum):
     Admin = 4
@@ -46,6 +52,22 @@ class Base(MappedAsDataclass, DeclarativeBase):
         return cls.__name__.lower()
 
 
+dictlist_words = Table(
+    "dictlist_words",
+    Base.metadata,
+    Column(
+        "dictlist_id",
+        Integer,
+        ForeignKey("dictlist.id", ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "word_id", Integer, ForeignKey("word.id", ondelete="CASCADE"), nullable=False
+    ),
+    PrimaryKeyConstraint("dictlist_id", "word_id", name="dictlist_word_pk"),
+)
+
+
 class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=lambda: uuid.uuid4, init=False
@@ -59,10 +81,12 @@ class User(Base):
         init=False,
     )
     created: Mapped[datetime] = mapped_column(
-        TIMESTAMP, server_default=func.now(), init=False
+        TIMESTAMP(timezone=True), server_default=UTC_NOW, init=False
     )
     full_access_deadline: Mapped[datetime] = mapped_column(
-        TIMESTAMP, server_default=text("(now() + interval '356 days')"), init=False
+        TIMESTAMP(timezone=True),
+        server_default=text("(now() + interval '356 days')"),
+        init=False,
     )
 
     dict_lists: Mapped[list["DictList"]] = relationship(
@@ -71,16 +95,49 @@ class User(Base):
 
 
 class DictList(Base):
-    id: Mapped[int] = mapped_column(Integer, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("user.id", ondelete="CASCADE"), nullable=False
+    id: Mapped[int] = mapped_column(Integer, autoincrement=True, primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("user.id", ondelete="CASCADE"), nullable=False
     )
+    lang_id: Mapped[int] = mapped_column(Integer, ForeignKey("language.id"))
     name: Mapped[str] = mapped_column(default="General", nullable=False)
     max_words_limit: Mapped[int | None] = mapped_column(default=200)
     created: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=func.now(), init=False
+        TIMESTAMP(timezone=True), server_default=UTC_NOW, init=False
     )
 
-    __table_args__ = (PrimaryKeyConstraint("id", "user_id", name="dictlist_pk"),)
-
     user: Mapped["User"] = relationship("User", back_populates="dict_lists", init=False)
+    words: Mapped[list["Word"]] = relationship(
+        "Word", secondary=dictlist_words, back_populates="dict_lists", init=False
+    )
+
+
+class Word(Base):
+    id: Mapped[int] = mapped_column(Integer, autoincrement=True, primary_key=True)
+    lang_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("language.id"), nullable=False
+    )
+    new_word: Mapped[str] = mapped_column(nullable=False)
+    translation: Mapped[str | None] = mapped_column(default=None)
+    context: Mapped[list[str]] = mapped_column(ARRAY(String), default_factory=list)
+    note: Mapped[str | None] = mapped_column(default=None)
+    created: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), server_default=UTC_NOW, init=False
+    )
+
+    dict_lists: Mapped[list["DictList"]] = relationship(
+        "DictList", secondary=dictlist_words, back_populates="words", init=False
+    )
+
+
+class Language(Base):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(String(5), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    dict_lists: Mapped[list["DictList"]] = relationship(
+        "DictList", back_populates="language", init=False
+    )
+    words: Mapped[list["Word"]] = relationship(
+        "Word", back_populates="language", init=False
+    )
