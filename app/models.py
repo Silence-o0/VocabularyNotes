@@ -13,7 +13,7 @@ from sqlalchemy import (
     Table,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -73,7 +73,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(nullable=False, unique=True)
     password: Mapped[str] = mapped_column(nullable=False, repr=False)
     role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole, name="role_enum", default=UserRole.UnauthorizedUser)
+        Enum(UserRole, name="role_enum"), default=UserRole.UnauthorizedUser
     )
     created_at: Mapped[datetime] = mapped_column(default=utc_now, init=False)
 
@@ -129,6 +129,9 @@ class Word(Base):
     language: Mapped["Language"] = relationship(
         "Language", back_populates="words", repr=False
     )
+    contexts_list: AssociationProxy[list[str]] = association_proxy(
+        "contexts", "context"
+    )
     translation: Mapped[str | None] = mapped_column(default=None)
     note: Mapped[str | None] = mapped_column(default=None)
     dict_lists: Mapped[list["DictList"]] = relationship(
@@ -141,7 +144,6 @@ class Word(Base):
     contexts: Mapped[list["WordContext"]] = relationship(
         "WordContext", back_populates="word", init=False, repr=False
     )
-    contexts_list = association_proxy("contexts", "context")
 
 
 class WordContext(Base):
