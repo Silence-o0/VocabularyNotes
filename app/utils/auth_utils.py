@@ -1,14 +1,12 @@
 import os
 from datetime import timedelta
 
-from fastapi import HTTPException
-from fastapi.security import OAuth2PasswordBearer
-from jose import jwt
-from passlib.context import CryptContext
 from fastapi import HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from passlib.context import CryptContext
 
-from app.utils import utc_now
+from app.utils.datetime_utils import utc_now
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
@@ -25,6 +23,7 @@ def create_access_token(data: dict, minutes_delta: int):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+
 def jwt_decode(token: str):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -32,9 +31,9 @@ def jwt_decode(token: str):
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        sub: str = payload.get("sub")
-        if sub is None:
-            raise credentials_exception
+        if "sub" in payload:
+            sub = payload.get("sub")
+            return sub
     except JWTError:
         raise credentials_exception from None
-    return sub
+    return payload

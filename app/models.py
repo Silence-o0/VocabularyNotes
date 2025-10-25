@@ -23,7 +23,7 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from app.utils import utc_now
+from app.utils.datetime_utils import utc_now
 
 naming_convention = {
     "ix": "ix_%(column_0_label)s",
