@@ -1,6 +1,4 @@
-from pydantic import BaseModel, EmailStr
-
-from app.models import UserRole
+from pydantic import BaseModel, EmailStr, constr
 
 
 class UserLogin(BaseModel):
@@ -9,6 +7,6 @@ class UserLogin(BaseModel):
 
 
 class UserCreate(BaseModel):
-    username: str
+    username: constr(min_length=4, max_length=50, pattern=r"^\w+$")
     email: EmailStr
-    password: str
+    password: constr(min_length=6)
