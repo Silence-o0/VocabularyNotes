@@ -8,8 +8,8 @@ from passlib.context import CryptContext
 
 from app.utils.datetime_utils import utc_now
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
+SECRET_KEY = os.environ["SECRET_KEY"]
+ALGORITHM = os.environ["ALGORITHM"]
 
 auth_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 # auth_scheme = HTTPBearer()
@@ -19,7 +19,7 @@ pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
 
 def create_access_token(data: dict, minutes_delta: int):
     to_encode = data.copy()
-    expire = utc_now() + timedelta(minutes=int(minutes_delta))
+    expire = utc_now() + timedelta(minutes=minutes_delta)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
