@@ -57,3 +57,34 @@ def client(
         yield client
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def login_user(client, mocker):
+    mocker.patch("app.routers.users.send_verification_email")
+
+    user_data = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "securepassword123",
+    }
+    create_response = client.post("/users/", json=user_data)
+
+    login_response = client.post(
+        "/auth/login", data={"username": "testuser", "password": "securepassword123"}
+    )
+    token = login_response.json()["access_token"]
+    return {"user": create_response.json(), "token": token}
+
+
+@pytest.fixture
+def create_user(client, mocker):
+    mocker.patch("app.routers.users.send_verification_email")
+
+    user_data = {
+        "username": "otheruser",
+        "email": "other@example.com",
+        "password": "password123",
+    }
+    response = client.post("/users/", json=user_data)
+    return response.json()

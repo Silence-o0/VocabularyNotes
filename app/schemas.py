@@ -32,7 +32,7 @@ class UserUpdateEmail(BaseModel):
 
 
 class UserPasswordChange(BaseModel):
-    current_password: SecretStr
+    old_password: SecretStr
     new_password: SecretStr
 
 

@@ -1,7 +1,7 @@
 import os
 from datetime import timedelta
 
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
@@ -11,8 +11,8 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 ALGORITHM = os.environ["ALGORITHM"]
 PASSWORD_CRYPT = os.environ["PASSWORD_CRYPT"]
 
-auth_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-# auth_scheme = HTTPBearer()
+# auth_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+auth_scheme = HTTPBearer()
 
 pwd_context = CryptContext(schemes=[PASSWORD_CRYPT], deprecated="auto")
 

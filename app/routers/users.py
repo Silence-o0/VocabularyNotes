@@ -5,7 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 from psycopg import IntegrityError
 
 from app import schemas
-from app.dependencies import CurrentUserDep, DbSessionDep
+from app.dependencies import CurrentUserDep, DbSessionDep, TokenDep
 from app.services import users
 from app.utils.auth_utils import create_access_token, pwd_context
 from app.utils.email_utils import send_verification_email
@@ -51,10 +51,14 @@ def get_current_user(current_user: CurrentUserDep):
 
 @router.patch("/me/change_username", status_code=status.HTTP_200_OK)
 def update_username(
-    body: schemas.UserUpdateEmail, current_user: CurrentUserDep, db: DbSessionDep
+    body: schemas.UserUpdateUsername, current_user: CurrentUserDep, db: DbSessionDep
 ):
-    current_user.username = body.username
-    db.commit()
+    try:
+        current_user.username = body.username
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT) from None
 
 
 @router.patch("/me/change_email", status_code=status.HTTP_202_ACCEPTED)
@@ -63,7 +67,21 @@ def update_email(
     request: Request,
     background_tasks: BackgroundTasks,
     current_user: CurrentUserDep,
+    db: DbSessionDep,
 ):
+    if current_user.email == body.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    try:
+        existing_user = users.get_user_by_email(body.email, db)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+            )
+    except LookupError:
+        pass
+
     token_data = {"new_email": body.email, "user_id": str(current_user.id)}
     verify_token = create_access_token(token_data, VERIFY_TOKEN_EXPIRE_MINUTES)
     background_tasks.add_task(
@@ -81,9 +99,11 @@ def update_password(
     current_user: CurrentUserDep,
     db: DbSessionDep,
 ):
-    if not pwd_context.verify(body.old_password, current_user.password):
+    if not pwd_context.verify(
+        body.old_password.get_secret_value(), current_user.password
+    ):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
-    hashed_new_password = pwd_context.hash(body.new_password)
+    hashed_new_password = pwd_context.hash(body.new_password.get_secret_value())
     current_user.password = hashed_new_password
     db.commit()
 
@@ -101,9 +121,11 @@ def get_all_users(db: DbSessionDep):
 
 
 @router.get(
-    "/{user_id}", response_model=schemas.UserResponse, status_code=status.HTTP_200_OK
+    "/{user_id}",
+    response_model=schemas.UserResponse,
+    status_code=status.HTTP_200_OK,
 )
-def get_user_by_id(user_id: UUID, db: DbSessionDep):
+def get_user_by_id(user_id: UUID, db: DbSessionDep, token: TokenDep):
     try:
         user = users.get_user_by_id(user_id, db)
     except LookupError:
