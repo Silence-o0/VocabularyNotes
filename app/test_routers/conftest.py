@@ -1,0 +1,90 @@
+from typing import Any, Generator
+
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.models import Base
+
+TEST_DATABASE_URL = "sqlite:///:memory:"
+
+test_engine = create_engine(
+    TEST_DATABASE_URL, connect_args={"check_same_thread": False}
+)
+
+
+SessionTesting = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+
+@pytest.fixture
+def app() -> Generator[FastAPI, Any, None]:
+    Base.metadata.create_all(test_engine)
+
+    from app.main import app
+
+    yield app
+
+    Base.metadata.drop_all(test_engine)
+
+
+@pytest.fixture
+def db_session(app: FastAPI) -> Generator[SessionTesting, Any, None]:
+    connection = test_engine.connect()
+    transaction = connection.begin()
+    session = SessionTesting(bind=connection)
+
+    yield session
+
+    session.close()
+    transaction.rollback()
+    connection.close()
+
+
+@pytest.fixture
+def client(
+    app: FastAPI, db_session: SessionTesting
+) -> Generator[TestClient, Any, None]:
+    from app.database import get_db
+
+    def _get_test_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = _get_test_db
+
+    with TestClient(app) as client:
+        yield client
+
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def login_user(client, mocker):
+    mocker.patch("app.routers.users.send_verification_email")
+
+    user_data = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "securepassword123",
+    }
+    create_response = client.post("/users/", json=user_data)
+
+    login_response = client.post(
+        "/auth/login", data={"username": "testuser", "password": "securepassword123"}
+    )
+    token = login_response.json()["access_token"]
+    return {"user": create_response.json(), "token": token}
+
+
+@pytest.fixture
+def create_user(client, mocker):
+    mocker.patch("app.routers.users.send_verification_email")
+
+    user_data = {
+        "username": "otheruser",
+        "email": "other@example.com",
+        "password": "password123",
+    }
+    response = client.post("/users/", json=user_data)
+    return response.json()

@@ -3,8 +3,10 @@ from fastapi import FastAPI
 
 load_dotenv()
 
-from app.routers import users  # noqa: E402
+from app.routers import auth, users  # noqa: E402
 
 app = FastAPI()
 
+
+app.include_router(auth.router)
 app.include_router(users.router)
