@@ -1,7 +1,6 @@
 import os
 
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
-from pydantic import EmailStr
 
 conf = ConnectionConfig(
     MAIL_USERNAME=os.environ["MAIL_USERNAME"],
@@ -16,7 +15,7 @@ conf = ConnectionConfig(
 fm = FastMail(conf)
 
 
-def send_verification_email(request, email: EmailStr, token: str, action: str):
+def send_verification_email(request, email: str, token: str, action: str):
     verify_link = f"{request.base_url}auth/{action}?token={token}"
 
     message = MessageSchema(

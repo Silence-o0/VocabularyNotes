@@ -1,7 +1,6 @@
 import os
 from datetime import timedelta
 
-from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -10,11 +9,12 @@ from app.utils.datetime_utils import utc_now
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 ALGORITHM = os.environ["ALGORITHM"]
+PASSWORD_CRYPT = os.environ["PASSWORD_CRYPT"]
 
 auth_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 # auth_scheme = HTTPBearer()
 
-pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=[PASSWORD_CRYPT], deprecated="auto")
 
 
 def create_access_token(data: dict, minutes_delta: int):
@@ -25,15 +25,11 @@ def create_access_token(data: dict, minutes_delta: int):
 
 
 def jwt_decode(token: str):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-    )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         if "sub" in payload:
             sub = payload.get("sub")
             return sub
-    except JWTError:
-        raise credentials_exception from None
+    except JWTError as err:
+        raise ValueError from err
     return payload
