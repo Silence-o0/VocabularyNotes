@@ -31,6 +31,11 @@ class UserUpdateEmail(BaseModel):
     email: EmailStr
 
 
+class UserPasswordChange(BaseModel):
+    current_password: SecretStr
+    new_password: SecretStr
+
+
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -39,8 +44,3 @@ class UserResponse(BaseModel):
     email: EmailStr
     role: UserRole
     created_at: datetime
-
-
-class PasswordChangeRequest(BaseModel):
-    current_password: SecretStr
-    new_password: SecretStr

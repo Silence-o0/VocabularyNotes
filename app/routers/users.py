@@ -44,7 +44,7 @@ def create_user(
     return user
 
 
-@router.get("/me", model_response=schemas.UserResponse, status_code=status.HTTP_200_OK)
+@router.get("/me", response_model=schemas.UserResponse, status_code=status.HTTP_200_OK)
 def get_current_user(current_user: CurrentUserDep):
     return current_user
 
@@ -77,7 +77,7 @@ def update_email(
 
 @router.patch("/me/change_password", status_code=status.HTTP_200_OK)
 def update_password(
-    body: schemas.PasswordChangeRequest,
+    body: schemas.UserPasswordChange,
     current_user: CurrentUserDep,
     db: DbSessionDep,
 ):

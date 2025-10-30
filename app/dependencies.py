@@ -3,13 +3,14 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app import models
 from app.database import get_db
-from app.services import users
 from app.utils.auth_utils import auth_scheme, jwt_decode
 
 DbSessionDep = Annotated[Session, Depends(get_db)]
 TokenDep = Annotated[str, Depends(auth_scheme)]
+
+from app import models  # noqa: E402
+from app.services import users  # noqa: E402
 
 
 def current_user(token: TokenDep, db: DbSessionDep):
