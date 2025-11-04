@@ -23,6 +23,7 @@ from sqlalchemy.orm import (
     relationship,
 )
 
+from app.utils.auth_utils import pwd_context
 from app.utils.datetime_utils import utc_now
 
 naming_convention = {
@@ -87,6 +88,9 @@ class User(Base):
     words: Mapped[list["Word"]] = relationship(
         "Word", back_populates="user", init=False, repr=False
     )
+
+    def verify_password(self, password):
+        return pwd_context.verify(password, self.password)
 
 
 class DictList(Base):

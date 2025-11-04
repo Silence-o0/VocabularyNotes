@@ -25,18 +25,18 @@ def get_user_by_id(user_id: UUID, db: DbSessionDep):
 
 
 def get_user_by_username(username: str, db: DbSessionDep):
-    user = db.scalars(
+    user = db.scalar(
         select(models.User).where(models.User.username == username)
-    ).one_or_none()
+    )
     if not user:
         raise LookupError
     return user
 
 
 def get_user_by_email(email: str, db: DbSessionDep):
-    user = db.scalars(
+    user = db.scalar(
         select(models.User).where(models.User.email == email)
-    ).one_or_none()
+    )
     if not user:
         raise LookupError
     return user

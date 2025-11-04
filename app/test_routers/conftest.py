@@ -1,12 +1,15 @@
 from typing import Any, Generator
 
 import pytest
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.models import Base
+load_dotenv()
+
+from app.models import Base  # noqa: E402
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 

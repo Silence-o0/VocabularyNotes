@@ -19,7 +19,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: DbSessionDep,
-):
+) -> TokenResponse:
     try:
         user = users.get_user_by_username(form_data.username, db)
     except LookupError:
@@ -27,7 +27,7 @@ def login(
             status_code=status.HTTP_404_NOT_FOUND,
         ) from None
 
-    if not pwd_context.verify(form_data.password, user.password):
+    if not user.verify_password(form_data.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
@@ -37,7 +37,7 @@ def login(
 
 
 @router.get("/email_verify", status_code=status.HTTP_200_OK)
-def email_verify(token: str, db: DbSessionDep):
+def email_verify(token: str, db: DbSessionDep) -> None:
     try:
         email = jwt_decode(token)
     except ValueError:
@@ -50,10 +50,11 @@ def email_verify(token: str, db: DbSessionDep):
 
     user.role = UserRole.AuthorizedUser
     db.commit()
+    # TODO: Redirect to frontend after email verification
 
 
 @router.get("/email_change_verify", status_code=status.HTTP_200_OK)
-def email_change_verify(token: str, db: DbSessionDep):
+def email_change_verify(token: str, db: DbSessionDep) -> None:
     try:
         token_data = jwt_decode(token)
     except ValueError:
@@ -66,3 +67,4 @@ def email_change_verify(token: str, db: DbSessionDep):
 
     user.email = token_data["new_email"]
     db.commit()
+    # TODO: Redirect to frontend after email changing verification

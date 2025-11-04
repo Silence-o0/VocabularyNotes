@@ -11,7 +11,6 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 ALGORITHM = os.environ["ALGORITHM"]
 PASSWORD_CRYPT = os.environ["PASSWORD_CRYPT"]
 
-# auth_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 auth_scheme = HTTPBearer()
 
 pwd_context = CryptContext(schemes=[PASSWORD_CRYPT], deprecated="auto")

@@ -6,7 +6,7 @@ from psycopg import IntegrityError
 
 from app import schemas
 from app.dependencies import CurrentUserDep, DbSessionDep, TokenDep
-from app.services import users
+from app.services import users as user_service
 from app.utils.auth_utils import create_access_token, pwd_context
 from app.utils.email_utils import send_verification_email
 
@@ -15,15 +15,15 @@ VERIFY_TOKEN_EXPIRE_MINUTES = int(os.environ["VERIFY_TOKEN_EXPIRE_MINUTES"])
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(
     user: schemas.UserCreate,
     background_tasks: BackgroundTasks,
     request: Request,
     db: DbSessionDep,
-):
+) -> schemas.UserResponse:
     try:
-        user = users.create_user(user, db)
+        user = user_service.create_user(user, db)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -45,19 +45,18 @@ def create_user(
 
 
 @router.get("/me", response_model=schemas.UserResponse, status_code=status.HTTP_200_OK)
-def get_current_user(current_user: CurrentUserDep):
+def get_current_user(current_user: CurrentUserDep) -> schemas.UserResponse:
     return current_user
 
 
 @router.patch("/me/change_username", status_code=status.HTTP_200_OK)
 def update_username(
     body: schemas.UserUpdateUsername, current_user: CurrentUserDep, db: DbSessionDep
-):
+) -> None:
     try:
         current_user.username = body.username
         db.commit()
     except IntegrityError:
-        db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT) from None
 
 
@@ -68,17 +67,19 @@ def update_email(
     background_tasks: BackgroundTasks,
     current_user: CurrentUserDep,
     db: DbSessionDep,
-):
+) -> None:
     if current_user.email == body.email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
     try:
-        existing_user = users.get_user_by_email(body.email, db)
-        if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-            )
+        # We need to check that no user already has this email.
+        # If get_user_by_email didn't raise a LookupError, such a user
+        # does exist, and the check failed.
+        user_service.get_user_by_email(body.email, db)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+        )
     except LookupError:
         pass
 
@@ -92,32 +93,28 @@ def update_email(
         action="email_change_verify",
     )
 
-
 @router.patch("/me/change_password", status_code=status.HTTP_200_OK)
 def update_password(
     body: schemas.UserPasswordChange,
     current_user: CurrentUserDep,
     db: DbSessionDep,
-):
-    if not pwd_context.verify(
-        body.old_password.get_secret_value(), current_user.password
-    ):
+) -> None:
+    if not current_user.verify_password(body.old_password.get_secret_value()):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
-    hashed_new_password = pwd_context.hash(body.new_password.get_secret_value())
-    current_user.password = hashed_new_password
+    current_user.password = pwd_context.hash(body.new_password.get_secret_value())
     db.commit()
 
 
 @router.delete("/me", status_code=status.HTTP_200_OK)
-def delete_current_user(current_user: CurrentUserDep, db: DbSessionDep):
-    return users.delete_user(current_user, db)
+def delete_current_user(current_user: CurrentUserDep, db: DbSessionDep) -> None:
+    return user_service.delete_user(current_user, db)
 
 
 @router.get(
     "/all", response_model=list[schemas.UserResponse], status_code=status.HTTP_200_OK
 )
-def get_all_users(db: DbSessionDep):
-    return users.get_all_users(db)
+def get_all_users(db: DbSessionDep, current_user: CurrentUserDep) -> list[schemas.UserResponse]:
+    return user_service.get_all_users(db)
 
 
 @router.get(
@@ -125,9 +122,9 @@ def get_all_users(db: DbSessionDep):
     response_model=schemas.UserResponse,
     status_code=status.HTTP_200_OK,
 )
-def get_user_by_id(user_id: UUID, db: DbSessionDep, token: TokenDep):
+def get_user_by_id(user_id: UUID, db: DbSessionDep, current_user: CurrentUserDep) -> schemas.UserResponse:
     try:
-        user = users.get_user_by_id(user_id, db)
+        user = user_service.get_user_by_id(user_id, db)
     except LookupError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from None
     return user
