@@ -5,7 +5,8 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 from psycopg import IntegrityError
 
 from app import schemas
-from app.dependencies import CurrentUserDep, DbSessionDep, TokenDep
+from app.dependencies import CurrentUserDep, DbSessionDep
+from app.exceptions import NotFoundError
 from app.services import users as user_service
 from app.utils.auth_utils import create_access_token, pwd_context
 from app.utils.email_utils import send_verification_email
@@ -15,7 +16,9 @@ VERIFY_TOKEN_EXPIRE_MINUTES = int(os.environ["VERIFY_TOKEN_EXPIRE_MINUTES"])
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("/", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED
+)
 def create_user(
     user: schemas.UserCreate,
     background_tasks: BackgroundTasks,
@@ -74,13 +77,13 @@ def update_email(
         )
     try:
         # We need to check that no user already has this email.
-        # If get_user_by_email didn't raise a LookupError, such a user
+        # If get_user_by_email didn't raise a NotFoundError, such a user
         # does exist, and the check failed.
         user_service.get_user_by_email(body.email, db)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
         )
-    except LookupError:
+    except NotFoundError:
         pass
 
     token_data = {"new_email": body.email, "user_id": str(current_user.id)}
@@ -92,6 +95,7 @@ def update_email(
         token=verify_token,
         action="email_change_verify",
     )
+
 
 @router.patch("/me/change_password", status_code=status.HTTP_200_OK)
 def update_password(
@@ -113,7 +117,9 @@ def delete_current_user(current_user: CurrentUserDep, db: DbSessionDep) -> None:
 @router.get(
     "/all", response_model=list[schemas.UserResponse], status_code=status.HTTP_200_OK
 )
-def get_all_users(db: DbSessionDep, current_user: CurrentUserDep) -> list[schemas.UserResponse]:
+def get_all_users(
+    db: DbSessionDep, current_user: CurrentUserDep
+) -> list[schemas.UserResponse]:
     return user_service.get_all_users(db)
 
 
@@ -122,9 +128,11 @@ def get_all_users(db: DbSessionDep, current_user: CurrentUserDep) -> list[schema
     response_model=schemas.UserResponse,
     status_code=status.HTTP_200_OK,
 )
-def get_user_by_id(user_id: UUID, db: DbSessionDep, current_user: CurrentUserDep) -> schemas.UserResponse:
+def get_user_by_id(
+    user_id: UUID, db: DbSessionDep, current_user: CurrentUserDep
+) -> schemas.UserResponse:
     try:
         user = user_service.get_user_by_id(user_id, db)
-    except LookupError:
+    except NotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from None
     return user

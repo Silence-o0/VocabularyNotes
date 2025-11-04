@@ -5,10 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.dependencies import DbSessionDep
+from app.exceptions import NotFoundError
 from app.models import UserRole
 from app.schemas import TokenResponse
 from app.services import users
-from app.utils.auth_utils import create_access_token, jwt_decode, pwd_context
+from app.utils.auth_utils import create_access_token, jwt_decode
 
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"])
 
@@ -22,7 +23,7 @@ def login(
 ) -> TokenResponse:
     try:
         user = users.get_user_by_username(form_data.username, db)
-    except LookupError:
+    except NotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
         ) from None
@@ -45,7 +46,7 @@ def email_verify(token: str, db: DbSessionDep) -> None:
 
     try:
         user = users.get_user_by_email(email, db)
-    except LookupError:
+    except NotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from None
 
     user.role = UserRole.AuthorizedUser
@@ -62,7 +63,7 @@ def email_change_verify(token: str, db: DbSessionDep) -> None:
 
     try:
         user = users.get_user_by_id(token_data["user_id"], db)
-    except LookupError:
+    except NotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from None
 
     user.email = token_data["new_email"]

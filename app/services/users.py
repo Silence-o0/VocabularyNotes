@@ -4,6 +4,7 @@ from sqlalchemy import select
 
 from app import models, schemas
 from app.dependencies import DbSessionDep
+from app.exceptions import NotFoundError
 from app.utils.auth_utils import pwd_context
 
 
@@ -20,25 +21,21 @@ def create_user(user: schemas.UserCreate, db: DbSessionDep):
 def get_user_by_id(user_id: UUID, db: DbSessionDep):
     user = db.get(models.User, user_id)
     if not user:
-        raise LookupError
+        raise NotFoundError
     return user
 
 
 def get_user_by_username(username: str, db: DbSessionDep):
-    user = db.scalar(
-        select(models.User).where(models.User.username == username)
-    )
+    user = db.scalar(select(models.User).where(models.User.username == username))
     if not user:
-        raise LookupError
+        raise NotFoundError
     return user
 
 
 def get_user_by_email(email: str, db: DbSessionDep):
-    user = db.scalar(
-        select(models.User).where(models.User.email == email)
-    )
+    user = db.scalar(select(models.User).where(models.User.email == email))
     if not user:
-        raise LookupError
+        raise NotFoundError
     return user
 
 
