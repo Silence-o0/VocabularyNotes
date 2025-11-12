@@ -1,26 +1,20 @@
-import os
-from typing import Annotated
+from fastapi import APIRouter, HTTPException, status
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
-
+from app import models, schemas
+from app.constants import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.dependencies import DbSessionDep
 from app.exceptions import NotFoundError
-from app.models import UserRole
-from app.schemas import TokenResponse
 from app.services import users
 from app.utils.auth_utils import create_access_token, jwt_decode
-
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"])
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/login", status_code=status.HTTP_200_OK)
 def login(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    form_data: schemas.UserLogin,
     db: DbSessionDep,
-) -> TokenResponse:
+) -> schemas.TokenResponse:
     try:
         user = users.get_user_by_username(form_data.username, db)
     except NotFoundError:
@@ -34,7 +28,7 @@ def login(
         )
 
     token = create_access_token({"sub": str(user.id)}, ACCESS_TOKEN_EXPIRE_MINUTES)
-    return TokenResponse(access_token=token, token_type="bearer")
+    return schemas.TokenResponse(access_token=token, token_type="bearer")
 
 
 @router.get("/email_verify", status_code=status.HTTP_200_OK)
@@ -49,7 +43,7 @@ def email_verify(token: str, db: DbSessionDep) -> None:
     except NotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from None
 
-    user.role = UserRole.AuthorizedUser
+    user.role = models.UserRole.AuthorizedUser
     db.commit()
     # TODO: Redirect to frontend after email verification
 

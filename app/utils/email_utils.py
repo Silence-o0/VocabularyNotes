@@ -1,15 +1,15 @@
-import os
-
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
 
+from app import constants
+
 conf = ConnectionConfig(
-    MAIL_USERNAME=os.environ["MAIL_USERNAME"],
-    MAIL_PASSWORD=os.environ["MAIL_PASSWORD"],
-    MAIL_FROM=os.environ["MAIL_FROM"],
-    MAIL_PORT=int(os.environ["MAIL_PORT"]),
-    MAIL_SERVER=os.environ["MAIL_SERVER"],
-    MAIL_STARTTLS=os.environ["MAIL_STARTTLS"],
-    MAIL_SSL_TLS=os.environ["MAIL_SSL_TLS"],
+    MAIL_USERNAME=constants.MAIL_USERNAME,
+    MAIL_PASSWORD=constants.MAIL_PASSWORD,
+    MAIL_FROM=constants.MAIL_FROM,
+    MAIL_PORT=constants.MAIL_PORT,
+    MAIL_SERVER=constants.MAIL_SERVER,
+    MAIL_STARTTLS=constants.MAIL_STARTTLS,
+    MAIL_SSL_TLS=constants.MAIL_SSL_TLS,
 )
 
 fm = FastMail(conf)

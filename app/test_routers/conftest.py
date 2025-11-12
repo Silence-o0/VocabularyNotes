@@ -1,15 +1,16 @@
 from typing import Any, Generator
 
 import pytest
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import StaticPool, create_engine
 from sqlalchemy.orm import Session
 
-load_dotenv()
-
-from app.models import Base  # noqa: E402
+from app import schemas
+from app.constants import ACCESS_TOKEN_EXPIRE_MINUTES
+from app.models import Base
+from app.services import users as user_service
+from app.utils.auth_utils import create_access_token
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
@@ -17,6 +18,7 @@ TEST_DATABASE_URL = "sqlite:///:memory:"
 @pytest.fixture(scope="session")
 def app() -> Generator[FastAPI, Any, None]:
     from app.main import app
+
     return app
 
 
@@ -57,31 +59,18 @@ def mock_send_verification_email(mocker):
 
 
 @pytest.fixture
-def login_user(client, mock_send_verification_email):
-
-    user_data = {
-        "username": "testuser",
-        "email": "test@example.com",
-        "password": "securepassword123",
-    }
-    create_response = client.post("/users/", json=user_data)
-
-    login_response = client.post(
-        "/auth/login", data={"username": "testuser", "password": "securepassword123"}
+def authorized_client(client, db_session, mock_send_verification_email):
+    user_data = schemas.UserCreate(
+        username="testuser",
+        email="test@example.com",
+        password="securepassword123",
     )
-    token = login_response.json()["access_token"]
-    return {"user": create_response.json(), "token": token}
 
-
-@pytest.fixture
-def create_user(client, mock_send_verification_email):
-
-    user_data = {
-        "username": "otheruser",
-        "email": "other@example.com",
-        "password": "password123",
+    user = user_service.create_user(user_data, db_session)
+    token = create_access_token({"sub": str(user.id)}, ACCESS_TOKEN_EXPIRE_MINUTES)
+    client.headers = {
+        **client.headers,
+        "Authorization": f"Bearer {token}",
     }
-    response = client.post("/users/", json=user_data)
-    return response.json()
 
-
+    return {"client": client, "user": user}

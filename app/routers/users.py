@@ -1,17 +1,15 @@
-import os
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 from psycopg import IntegrityError
 
 from app import schemas
+from app.constants import VERIFY_TOKEN_EXPIRE_MINUTES
 from app.dependencies import CurrentUserDep, DbSessionDep
 from app.exceptions import NotFoundError
 from app.services import users as user_service
 from app.utils.auth_utils import create_access_token, pwd_context
 from app.utils.email_utils import send_verification_email
-
-VERIFY_TOKEN_EXPIRE_MINUTES = int(os.environ["VERIFY_TOKEN_EXPIRE_MINUTES"])
 
 router = APIRouter(prefix="/users", tags=["users"])
 
