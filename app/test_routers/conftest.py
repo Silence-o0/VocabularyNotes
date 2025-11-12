@@ -4,8 +4,8 @@ import pytest
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import StaticPool, create_engine
+from sqlalchemy.orm import Session
 
 load_dotenv()
 
@@ -13,42 +13,31 @@ from app.models import Base  # noqa: E402
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
-test_engine = create_engine(
-    TEST_DATABASE_URL, connect_args={"check_same_thread": False}
-)
 
-
-SessionTesting = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+@pytest.fixture(scope="session")
+def app() -> Generator[FastAPI, Any, None]:
+    from app.main import app
+    return app
 
 
 @pytest.fixture
-def app() -> Generator[FastAPI, Any, None]:
+def db_session() -> Generator[Session]:
+    test_engine = create_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
     Base.metadata.create_all(test_engine)
 
-    from app.main import app
-
-    yield app
+    with Session(bind=test_engine) as db:
+        yield db
 
     Base.metadata.drop_all(test_engine)
 
 
 @pytest.fixture
-def db_session(app: FastAPI) -> Generator[SessionTesting, Any, None]:
-    connection = test_engine.connect()
-    transaction = connection.begin()
-    session = SessionTesting(bind=connection)
-
-    yield session
-
-    session.close()
-    transaction.rollback()
-    connection.close()
-
-
-@pytest.fixture
-def client(
-    app: FastAPI, db_session: SessionTesting
-) -> Generator[TestClient, Any, None]:
+def client(app: FastAPI, db_session: Session) -> Generator[TestClient, Any, None]:
     from app.database import get_db
 
     def _get_test_db():
@@ -63,8 +52,12 @@ def client(
 
 
 @pytest.fixture
-def login_user(client, mocker):
-    mocker.patch("app.routers.users.send_verification_email")
+def mock_send_verification_email(mocker):
+    return mocker.patch("app.routers.users.send_verification_email")
+
+
+@pytest.fixture
+def login_user(client, mock_send_verification_email):
 
     user_data = {
         "username": "testuser",
@@ -81,8 +74,7 @@ def login_user(client, mocker):
 
 
 @pytest.fixture
-def create_user(client, mocker):
-    mocker.patch("app.routers.users.send_verification_email")
+def create_user(client, mock_send_verification_email):
 
     user_data = {
         "username": "otheruser",
@@ -91,3 +83,5 @@ def create_user(client, mocker):
     }
     response = client.post("/users/", json=user_data)
     return response.json()
+
+

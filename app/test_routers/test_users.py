@@ -4,27 +4,25 @@ import uuid
 class TestCreateUser:
     """POST /users/"""
 
-    def test_create_user_success(self, client, mocker):
-        mock_send_email = mocker.patch("app.routers.users.send_verification_email")
+    def test_create_user_success(self, client, mock_send_verification_email):
         data = {
             "username": "user0",
             "email": "test1@example.com",
             "password": "testing",
         }
         response = client.post("/users", json=data)
-        mock_send_email.assert_called_once()
+        mock_send_verification_email.assert_called_once()
         assert response.status_code == 201
         assert response.json()["username"] == data["username"]
         assert response.json()["email"] == data["email"]
         assert response.json()["role"] == 1
         # assert response.json()["password"] != data["password"]
 
-    def test_create_user_missing_fields(self, client, mocker):
-        mock_send_email = mocker.patch("app.routers.users.send_verification_email")
+    def test_create_user_missing_fields(self, client, mock_send_verification_email):
         incomplete_data = {"username": "testuser"}
         response = client.post("/users/", json=incomplete_data)
         assert response.status_code == 422
-        mock_send_email.assert_not_called()
+        mock_send_verification_email.assert_not_called()
 
 
 class TestLogin:
