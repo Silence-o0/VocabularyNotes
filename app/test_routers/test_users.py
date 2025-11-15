@@ -68,7 +68,9 @@ class TestLogin:
 class TestGetCurrentUser:
     """GET /users/me"""
 
-    def test_get_current_user_success(self, authorized_client, created_user, db_session):
+    def test_get_current_user_success(
+        self, authorized_client, created_user, db_session
+    ):
         response = authorized_client.get("/users/me")
         assert response.status_code == 200
 
@@ -98,12 +100,12 @@ class TestUpdateUsername:
 
     def test_update_username_success(self, authorized_client, created_user, db_session):
         update_data = {"username": "new_username"}
-        response = authorized_client.patch("/users/me/change_username", json=update_data)
+        response = authorized_client.patch(
+            "/users/me/change_username", json=update_data
+        )
         assert response.status_code == 200
 
-        updated_user = user_service.get_user_by_id(
-            created_user.id, db_session
-        )
+        updated_user = user_service.get_user_by_id(created_user.id, db_session)
         assert updated_user.username == "new_username"
 
     def test_update_username_unauthorized(self, client):
@@ -152,7 +154,9 @@ class TestUpdatePassword:
             "old_password": "securepassword123",
             "new_password": "newsecurepassword456",
         }
-        response = authorized_client.patch("/users/me/change_password", json=update_data)
+        response = authorized_client.patch(
+            "/users/me/change_password", json=update_data
+        )
         assert response.status_code == 200
 
         updated_user = user_service.get_user_by_id(created_user.id, db_session)
@@ -163,7 +167,9 @@ class TestUpdatePassword:
             "old_password": "wrongpassword",
             "new_password": "newsecurepassword456",
         }
-        response = authorized_client.patch("/users/me/change_password", json=update_data)
+        response = authorized_client.patch(
+            "/users/me/change_password", json=update_data
+        )
         assert response.status_code == 400
 
     def test_update_password_unauthorized(self, client):

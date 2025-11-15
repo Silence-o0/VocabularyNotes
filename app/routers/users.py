@@ -1,12 +1,11 @@
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
-from psycopg import IntegrityError
 
 from app import schemas
 from app.constants import VERIFY_TOKEN_EXPIRE_MINUTES
 from app.dependencies import CurrentUserDep, DbSessionDep
-from app.exceptions import NotFoundError
+from app.exceptions import AlreadyExistsError, NotFoundError
 from app.services import users as user_service
 from app.utils.auth_utils import create_access_token, pwd_context
 from app.utils.email_utils import send_verification_email
@@ -29,7 +28,7 @@ def create_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
         ) from None
-    except IntegrityError:
+    except AlreadyExistsError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
         ) from None
@@ -54,11 +53,18 @@ def get_current_user(current_user: CurrentUserDep) -> schemas.UserResponse:
 def update_username(
     body: schemas.UserUpdateUsername, current_user: CurrentUserDep, db: DbSessionDep
 ) -> None:
+    if current_user.username == body.username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
     try:
+        user_service.get_user_by_username(body.username, db)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+        )
+    except NotFoundError:
         current_user.username = body.username
         db.commit()
-    except IntegrityError:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT) from None
 
 
 @router.patch("/me/change_email", status_code=status.HTTP_202_ACCEPTED)

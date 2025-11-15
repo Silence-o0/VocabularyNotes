@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
 
 from app import constants
@@ -24,4 +26,4 @@ def send_verification_email(request, email: str, token: str, action: str):
         body=f"Click the link to verify your account: {verify_link}",
         subtype="html",
     )
-    fm.send_message(message)
+    asyncio.run(fm.send_message(message))
