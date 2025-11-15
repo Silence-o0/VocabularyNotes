@@ -21,7 +21,7 @@ def create_access_token(data: dict, minutes_delta: int):
 
 def jwt_decode(token: str):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=JWT_ALGORITM)
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[JWT_ALGORITM])
         if "sub" in payload:
             sub = payload.get("sub")
             return sub

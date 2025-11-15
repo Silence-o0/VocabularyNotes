@@ -2,31 +2,8 @@ import uuid
 
 import pytest
 
-from app import schemas
 from app.exceptions import NotFoundError
 from app.services import users as user_service
-
-
-@pytest.fixture
-def created_user(db_session):
-    user_data = schemas.UserCreate(
-        username="testuser",
-        email="test@example.com",
-        password="securepassword123",
-    )
-    user = user_service.create_user(user_data, db_session)
-    return user
-
-
-@pytest.fixture
-def created_another_user(db_session):
-    user_data = schemas.UserCreate(
-        username="otheruser",
-        email="other@example.com",
-        password="password123",
-    )
-    user = user_service.create_user(user_data, db_session)
-    return user
 
 
 class TestCreateUser:
@@ -91,14 +68,11 @@ class TestLogin:
 class TestGetCurrentUser:
     """GET /users/me"""
 
-    def test_get_current_user_success(self, authorized_client, db_session):
-        client = authorized_client["client"]
-        user = authorized_client["user"]
-
-        response = client.get("/users/me")
+    def test_get_current_user_success(self, authorized_client, created_user, db_session):
+        response = authorized_client.get("/users/me")
         assert response.status_code == 200
 
-        user_from_db = user_service.get_user_by_id(user.id, db_session)
+        user_from_db = user_service.get_user_by_id(created_user.id, db_session)
         expected_data = {
             "id": str(user_from_db.id),
             "username": user_from_db.username,
@@ -122,15 +96,13 @@ class TestGetCurrentUser:
 class TestUpdateUsername:
     """PATCH /users/me/change_username"""
 
-    def test_update_username_success(self, authorized_client, db_session):
-        client = authorized_client["client"]
-
+    def test_update_username_success(self, authorized_client, created_user, db_session):
         update_data = {"username": "new_username"}
-        response = client.patch("/users/me/change_username", json=update_data)
+        response = authorized_client.patch("/users/me/change_username", json=update_data)
         assert response.status_code == 200
 
         updated_user = user_service.get_user_by_id(
-            authorized_client["user"].id, db_session
+            created_user.id, db_session
         )
         assert updated_user.username == "new_username"
 
@@ -146,16 +118,14 @@ class TestUpdateEmail:
     def test_update_email_success(
         self, authorized_client, mock_send_verification_email
     ):
-        client = authorized_client["client"]
         update_data = {"email": "new@example.com"}
-        response = client.patch("/users/me/change_email", json=update_data)
+        response = authorized_client.patch("/users/me/change_email", json=update_data)
         assert response.status_code == 202
         mock_send_verification_email.assert_called_once()
 
     def test_update_email_invalid_format(self, authorized_client):
-        client = authorized_client["client"]
         update_data = {"email": "invalid-email"}
-        response = client.patch("/users/me/change_email", json=update_data)
+        response = authorized_client.patch("/users/me/change_email", json=update_data)
         assert response.status_code == 422
 
     def test_update_email_unauthorized(self, client):
@@ -164,44 +134,36 @@ class TestUpdateEmail:
         assert response.status_code == 403
 
     def test_update_email_same_email(self, authorized_client):
-        client = authorized_client["client"]
-
         update_data = {"email": "test@example.com"}
-        response = client.patch("/users/me/change_email", json=update_data)
+        response = authorized_client.patch("/users/me/change_email", json=update_data)
         assert response.status_code == 400
 
     def test_update_email_duplicate(self, authorized_client, created_another_user):
-        client = authorized_client["client"]
         update_data = {"email": created_another_user.email}
-        response = client.patch("/users/me/change_email", json=update_data)
+        response = authorized_client.patch("/users/me/change_email", json=update_data)
         assert response.status_code == 409
 
 
 class TestUpdatePassword:
     """PATCH /users/me/change_password"""
 
-    def test_update_password_success(self, authorized_client, db_session):
-        client = authorized_client["client"]
-        user = authorized_client["user"]
+    def test_update_password_success(self, authorized_client, created_user, db_session):
         update_data = {
             "old_password": "securepassword123",
             "new_password": "newsecurepassword456",
         }
-
-        response = client.patch("/users/me/change_password", json=update_data)
+        response = authorized_client.patch("/users/me/change_password", json=update_data)
         assert response.status_code == 200
 
-        updated_user = user_service.get_user_by_id(user.id, db_session)
+        updated_user = user_service.get_user_by_id(created_user.id, db_session)
         assert updated_user.verify_password(update_data["new_password"])
 
     def test_update_password_wrong_old_password(self, authorized_client):
-        client = authorized_client["client"]
-
         update_data = {
             "old_password": "wrongpassword",
             "new_password": "newsecurepassword456",
         }
-        response = client.patch("/users/me/change_password", json=update_data)
+        response = authorized_client.patch("/users/me/change_password", json=update_data)
         assert response.status_code == 400
 
     def test_update_password_unauthorized(self, client):
@@ -216,15 +178,11 @@ class TestUpdatePassword:
 class TestDeleteUser:
     """DELETE /users/me"""
 
-    def test_delete_user_success(self, authorized_client, db_session):
-        client = authorized_client["client"]
-        user = authorized_client["user"]
-
-        response = client.delete("/users/me")
+    def test_delete_user_success(self, authorized_client, created_user, db_session):
+        response = authorized_client.delete("/users/me")
         assert response.status_code == 200
-
         with pytest.raises(NotFoundError):
-            user_service.get_user_by_id(user.id, db_session)
+            user_service.get_user_by_id(created_user.id, db_session)
 
     def test_delete_user_unauthorized(self, client):
         response = client.delete("/users/me")
@@ -235,33 +193,25 @@ class TestGetUserById:
     """GET /users/{user_id}"""
 
     def test_get_user_by_id_success(self, authorized_client, created_another_user):
-        client = authorized_client["client"]
-        user = created_another_user
-
-        response = client.get(f"/users/{user.id}")
+        response = authorized_client.get(f"/users/{created_another_user.id}")
         assert response.status_code == 200
         assert response.json() == {
-            "id": str(user.id),
-            "username": user.username,
-            "email": user.email,
-            "role": user.role,
-            "created_at": user.created_at.isoformat(),
+            "id": str(created_another_user.id),
+            "username": created_another_user.username,
+            "email": created_another_user.email,
+            "role": created_another_user.role,
+            "created_at": created_another_user.created_at.isoformat(),
         }
 
     def test_get_user_by_id_not_found(self, authorized_client):
-        client = authorized_client["client"]
         non_existent_id = uuid.uuid4()
-        response = client.get(f"/users/{non_existent_id}")
+        response = authorized_client.get(f"/users/{non_existent_id}")
         assert response.status_code == 404
 
     def test_get_user_by_id_invalid_uuid(self, authorized_client):
-        client = authorized_client["client"]
-
-        response = client.get("/users/invalid-uuid")
+        response = authorized_client.get("/users/invalid-uuid")
         assert response.status_code == 422
 
     def test_get_user_by_id_unauthorized(self, created_user, client):
-        user = created_user
-
-        response = client.get(f"/users/{user.id}")
+        response = client.get(f"/users/{created_user.id}")
         assert response.status_code == 403

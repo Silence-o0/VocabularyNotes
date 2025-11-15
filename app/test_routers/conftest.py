@@ -6,8 +6,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import StaticPool, create_engine
 from sqlalchemy.orm import Session
 
+from app import schemas
 from app.constants import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.models import Base
+from app.services import users as user_service
 from app.utils.auth_utils import create_access_token
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -52,12 +54,34 @@ def client(app: FastAPI, db_session: Session) -> Generator[TestClient, Any, None
 
 
 @pytest.fixture
+def created_user(db_session):
+    user_data = schemas.UserCreate(
+        username="testuser",
+        email="test@example.com",
+        password="securepassword123",
+    )
+    user = user_service.create_user(user_data, db_session)
+    return user
+
+
+@pytest.fixture
+def created_another_user(db_session):
+    user_data = schemas.UserCreate(
+        username="otheruser",
+        email="other@example.com",
+        password="password123",
+    )
+    user = user_service.create_user(user_data, db_session)
+    return user
+
+
+@pytest.fixture
 def mock_send_verification_email(mocker):
     return mocker.patch("app.routers.users.send_verification_email")
 
 
 @pytest.fixture
-def authorized_client(client, db_session, created_user):
+def authorized_client(client, created_user):
     token = create_access_token(
         {"sub": str(created_user.id)}, ACCESS_TOKEN_EXPIRE_MINUTES
     )
@@ -65,5 +89,4 @@ def authorized_client(client, db_session, created_user):
         **client.headers,
         "Authorization": f"Bearer {token}",
     }
-
-    return {"client": client, "user": created_user}
+    return client
