@@ -14,6 +14,7 @@ from app.utils.auth_utils import auth_scheme, jwt_decode
 DbSessionDep = Annotated[Session, Depends(get_db)]
 TokenDep = Annotated[HTTPBearer, Depends(auth_scheme)]
 
+
 def current_user(token: TokenDep, db: DbSessionDep):
     try:
         user_id = uuid.UUID(jwt_decode(token.credentials))
@@ -21,5 +22,6 @@ def current_user(token: TokenDep, db: DbSessionDep):
     except (ValueError, NotFoundError):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST) from None
     return user
+
 
 CurrentUserDep = Annotated[models.User, Depends(current_user)]

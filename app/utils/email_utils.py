@@ -1,5 +1,3 @@
-import asyncio
-
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
 
 from app import constants
