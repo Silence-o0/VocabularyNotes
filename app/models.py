@@ -23,7 +23,8 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from app.utils import utc_now
+from app.utils.auth_utils import pwd_context
+from app.utils.datetime_utils import utc_now
 
 naming_convention = {
     "ix": "ix_%(column_0_label)s",
@@ -67,7 +68,7 @@ dictlist_words = Table(
 
 class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, init=False
+        UUID(as_uuid=True), primary_key=True, default_factory=uuid.uuid4, init=False
     )
     username: Mapped[str] = mapped_column(nullable=False, unique=True)
     email: Mapped[str] = mapped_column(nullable=False, unique=True)
@@ -75,7 +76,7 @@ class User(Base):
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, name="role_enum"), default=UserRole.UnauthorizedUser
     )
-    created_at: Mapped[datetime] = mapped_column(default=utc_now, init=False)
+    created_at: Mapped[datetime] = mapped_column(default_factory=utc_now, init=False)
 
     dict_lists: Mapped[list["DictList"]] = relationship(
         "DictList",
@@ -88,6 +89,9 @@ class User(Base):
         "Word", back_populates="user", init=False, repr=False
     )
 
+    def verify_password(self, password):
+        return pwd_context.verify(password, self.password)
+
 
 class DictList(Base):
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
@@ -99,7 +103,7 @@ class DictList(Base):
     )
     lang_code: Mapped[str] = mapped_column(ForeignKey("language.code"), init=False)
     name: Mapped[str] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=utc_now, init=False)
+    created_at: Mapped[datetime] = mapped_column(default_factory=utc_now, init=False)
     user: Mapped["User"] = relationship("User", back_populates="dict_lists", repr=False)
     language: Mapped["Language"] = relationship(
         "Language", back_populates="dict_lists", repr=False
@@ -124,7 +128,7 @@ class Word(Base):
         init=False,
     )
     new_word: Mapped[str] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=utc_now, init=False)
+    created_at: Mapped[datetime] = mapped_column(default_factory=utc_now, init=False)
     user: Mapped["User"] = relationship("User", back_populates="words", repr=False)
     language: Mapped["Language"] = relationship(
         "Language", back_populates="words", repr=False
