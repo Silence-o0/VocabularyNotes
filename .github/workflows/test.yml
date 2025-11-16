@@ -40,11 +40,11 @@ jobs:
       - name: Install deps
         run: uv sync
 
-      - name: Format code
-        run: ruff format
+      - name: Check formatting
+        run: ruff format --check
 
-      - name: Lint and fix code
-        run: ruff check --fix
+      - name: Lint code
+        run: ruff check
 
       - name: Test code
         run: pytest .
