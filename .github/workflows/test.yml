@@ -13,12 +13,20 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}
       VERIFY_TOKEN_EXPIRE_MINUTES: ${{ secrets.VERIFY_TOKEN_EXPIRE_MINUTES }}
+
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      MAIL_FROM: ${{ secrets.MAIL_FROM }}
+      MAIL_PORT: ${{ secrets.MAIL_PORT }}
+      MAIL_SERVER: ${{ secrets.MAIL_SERVER }}
+      MAIL_STARTTLS: ${{ secrets.MAIL_STARTTLS }}      
+      MAIL_SSL_TLS: ${{ secrets.MAIL_SSL_TLS }}
 
     steps:
       - uses: actions/checkout@v5
