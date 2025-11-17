@@ -25,3 +25,28 @@ def current_user(token: TokenDep, db: DbSessionDep):
 
 
 CurrentUserDep = Annotated[models.User, Depends(current_user)]
+
+
+def check_role(current_user: CurrentUserDep, min_role: models.UserRole):
+    if current_user.role < min_role:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+    return current_user
+
+
+def admin_required(current_user: CurrentUserDep):
+    return check_role(current_user, models.UserRole.Admin)
+
+
+def full_access_required(current_user: CurrentUserDep):
+    return check_role(current_user, models.UserRole.FullAccessUser)
+
+
+def authorized_required(current_user: CurrentUserDep):
+    return check_role(current_user, models.UserRole.AuthorizedUser)
+
+
+AdminRoleDep = Annotated[models.User, Depends(admin_required)]
+FullAccessDep = Annotated[models.User, Depends(full_access_required)]
+AuthorizedDep = Annotated[models.User, Depends(authorized_required)]

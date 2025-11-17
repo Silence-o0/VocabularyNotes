@@ -4,7 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 
 from app import schemas
 from app.constants import VERIFY_TOKEN_EXPIRE_MINUTES
-from app.dependencies import CurrentUserDep, DbSessionDep
+from app.dependencies import AdminRoleDep, CurrentUserDep, DbSessionDep
 from app.exceptions import AlreadyExistsError, NotFoundError
 from app.services import users as user_service
 from app.utils.auth_utils import create_access_token, pwd_context
@@ -122,7 +122,7 @@ def delete_current_user(current_user: CurrentUserDep, db: DbSessionDep) -> None:
     "/all", response_model=list[schemas.UserResponse], status_code=status.HTTP_200_OK
 )
 def get_all_users(
-    db: DbSessionDep, current_user: CurrentUserDep
+    db: DbSessionDep, current_user: AdminRoleDep
 ) -> list[schemas.UserResponse]:
     return user_service.get_all_users(db)
 
@@ -133,7 +133,7 @@ def get_all_users(
     status_code=status.HTTP_200_OK,
 )
 def get_user_by_id(
-    user_id: UUID, db: DbSessionDep, current_user: CurrentUserDep
+    user_id: UUID, db: DbSessionDep, current_user: AdminRoleDep
 ) -> schemas.UserResponse:
     try:
         user = user_service.get_user_by_id(user_id, db)

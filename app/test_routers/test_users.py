@@ -22,16 +22,16 @@ class TestCreateUser:
         assert response.status_code == 201
         mock_send_verification_email.assert_called_once()
 
-        created_user = user_service.get_user_by_email(data["email"], db_session)
+        user = user_service.get_user_by_email(data["email"], db_session)
         expected_data = {
-            "id": str(created_user.id),
-            "username": created_user.username,
-            "email": created_user.email,
-            "role": created_user.role,
-            "created_at": created_user.created_at.isoformat(),
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "created_at": user.created_at.isoformat(),
         }
         assert response.json() == expected_data
-        assert created_user.password != data["password"]
+        assert user.password != data["password"]
 
     def test_create_user_missing_fields(self, client, mock_send_verification_email):
         incomplete_data = {"username": "testuser"}
@@ -43,9 +43,9 @@ class TestCreateUser:
 class TestLogin:
     """POST /auth/login"""
 
-    def test_login_success(self, client, created_user):
+    def test_login_success(self, client, user):
         login_data = {
-            "username": created_user.username,
+            "username": user.username,
             "password": "securepassword123",
         }
         response = client.post("/auth/login", json=login_data)
@@ -59,8 +59,8 @@ class TestLogin:
         response = client.post("/auth/login", json=login_data)
         assert response.status_code == 404
 
-    def test_login_wrong_password(self, client, created_user):
-        login_data = {"username": created_user.username, "password": "wrongpassword"}
+    def test_login_wrong_password(self, client, user):
+        login_data = {"username": user.username, "password": "wrongpassword"}
         response = client.post("/auth/login", json=login_data)
         assert response.status_code == 400
 
@@ -68,19 +68,17 @@ class TestLogin:
 class TestGetCurrentUser:
     """GET /users/me"""
 
-    def test_get_current_user_success(
-        self, authorized_client, created_user, db_session
-    ):
+    def test_get_current_user_success(self, authorized_client, user, db_session):
         response = authorized_client.get("/users/me")
         assert response.status_code == 200
 
-        user_from_db = user_service.get_user_by_id(created_user.id, db_session)
+        user_db = user_service.get_user_by_id(user.id, db_session)
         expected_data = {
-            "id": str(user_from_db.id),
-            "username": user_from_db.username,
-            "email": user_from_db.email,
-            "role": user_from_db.role,
-            "created_at": user_from_db.created_at.isoformat(),
+            "id": str(user_db.id),
+            "username": user_db.username,
+            "email": user_db.email,
+            "role": user_db.role,
+            "created_at": user_db.created_at.isoformat(),
         }
         assert response.json() == expected_data
 
@@ -98,14 +96,14 @@ class TestGetCurrentUser:
 class TestUpdateUsername:
     """PATCH /users/me/change_username"""
 
-    def test_update_username_success(self, authorized_client, created_user, db_session):
+    def test_update_username_success(self, authorized_client, user, db_session):
         update_data = {"username": "new_username"}
         response = authorized_client.patch(
             "/users/me/change_username", json=update_data
         )
         assert response.status_code == 200
 
-        updated_user = user_service.get_user_by_id(created_user.id, db_session)
+        updated_user = user_service.get_user_by_id(user.id, db_session)
         assert updated_user.username == "new_username"
 
     def test_update_username_unauthorized(self, client):
@@ -140,8 +138,8 @@ class TestUpdateEmail:
         response = authorized_client.patch("/users/me/change_email", json=update_data)
         assert response.status_code == 400
 
-    def test_update_email_duplicate(self, authorized_client, created_another_user):
-        update_data = {"email": created_another_user.email}
+    def test_update_email_duplicate(self, authorized_client, another_user):
+        update_data = {"email": another_user.email}
         response = authorized_client.patch("/users/me/change_email", json=update_data)
         assert response.status_code == 409
 
@@ -149,7 +147,7 @@ class TestUpdateEmail:
 class TestUpdatePassword:
     """PATCH /users/me/change_password"""
 
-    def test_update_password_success(self, authorized_client, created_user, db_session):
+    def test_update_password_success(self, authorized_client, user, db_session):
         update_data = {
             "old_password": "securepassword123",
             "new_password": "newsecurepassword456",
@@ -159,7 +157,7 @@ class TestUpdatePassword:
         )
         assert response.status_code == 200
 
-        updated_user = user_service.get_user_by_id(created_user.id, db_session)
+        updated_user = user_service.get_user_by_id(user.id, db_session)
         assert updated_user.verify_password(update_data["new_password"])
 
     def test_update_password_wrong_old_password(self, authorized_client):
@@ -184,11 +182,11 @@ class TestUpdatePassword:
 class TestDeleteUser:
     """DELETE /users/me"""
 
-    def test_delete_user_success(self, authorized_client, created_user, db_session):
+    def test_delete_user_success(self, authorized_client, user, db_session):
         response = authorized_client.delete("/users/me")
         assert response.status_code == 200
         with pytest.raises(NotFoundError):
-            user_service.get_user_by_id(created_user.id, db_session)
+            user_service.get_user_by_id(user.id, db_session)
 
     def test_delete_user_unauthorized(self, client):
         response = client.delete("/users/me")
@@ -198,26 +196,44 @@ class TestDeleteUser:
 class TestGetUserById:
     """GET /users/{user_id}"""
 
-    def test_get_user_by_id_success(self, authorized_client, created_another_user):
-        response = authorized_client.get(f"/users/{created_another_user.id}")
+    def test_get_user_by_id_success(self, authorized_client_as_admin, another_user):
+        response = authorized_client_as_admin.get(f"/users/{another_user.id}")
         assert response.status_code == 200
         assert response.json() == {
-            "id": str(created_another_user.id),
-            "username": created_another_user.username,
-            "email": created_another_user.email,
-            "role": created_another_user.role,
-            "created_at": created_another_user.created_at.isoformat(),
+            "id": str(another_user.id),
+            "username": another_user.username,
+            "email": another_user.email,
+            "role": another_user.role,
+            "created_at": another_user.created_at.isoformat(),
         }
 
-    def test_get_user_by_id_not_found(self, authorized_client):
+    def test_get_user_by_id_not_found(self, authorized_client_as_admin):
         non_existent_id = uuid.uuid4()
-        response = authorized_client.get(f"/users/{non_existent_id}")
+        response = authorized_client_as_admin.get(f"/users/{non_existent_id}")
         assert response.status_code == 404
 
-    def test_get_user_by_id_invalid_uuid(self, authorized_client):
-        response = authorized_client.get("/users/invalid-uuid")
+    def test_get_user_by_id_invalid_uuid(self, authorized_client_as_admin):
+        response = authorized_client_as_admin.get("/users/invalid-uuid")
         assert response.status_code == 422
 
-    def test_get_user_by_id_unauthorized(self, created_user, client):
-        response = client.get(f"/users/{created_user.id}")
+    def test_get_user_by_id_unauthorized(self, user, client):
+        response = client.get(f"/users/{user.id}")
+        assert response.status_code == 403
+
+    def test_get_user_by_id_non_admin(self, authorized_client, another_user):
+        response = authorized_client.get(f"/users/{another_user.id}")
+        assert response.status_code == 403
+
+
+class TestGetAllUsers:
+    """GET /users/all"""
+
+    def test_admin_can_get_all_users(self, authorized_client_as_admin):
+        response = authorized_client_as_admin.get("/users/all")
+
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+
+    def test_non_admin_cannot_get_all_users(self, authorized_client):
+        response = authorized_client.get("/users/all")
         assert response.status_code == 403
