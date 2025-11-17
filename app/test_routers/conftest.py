@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import StaticPool, create_engine
 from sqlalchemy.orm import Session
 
-from app import schemas
+from app import models, schemas
 from app.constants import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.models import Base
 from app.services import users as user_service
@@ -82,6 +82,19 @@ def mock_send_verification_email(mocker):
 
 @pytest.fixture
 def authorized_client(client, created_user):
+    token = create_access_token(
+        {"sub": str(created_user.id)}, ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+    client.headers = {
+        **client.headers,
+        "Authorization": f"Bearer {token}",
+    }
+    return client
+
+
+@pytest.fixture
+def authorized_client_as_admin(client, created_user):
+    created_user.role = models.UserRole.Admin
     token = create_access_token(
         {"sub": str(created_user.id)}, ACCESS_TOKEN_EXPIRE_MINUTES
     )

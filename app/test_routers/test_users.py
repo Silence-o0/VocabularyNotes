@@ -198,8 +198,10 @@ class TestDeleteUser:
 class TestGetUserById:
     """GET /users/{user_id}"""
 
-    def test_get_user_by_id_success(self, authorized_client, created_another_user):
-        response = authorized_client.get(f"/users/{created_another_user.id}")
+    def test_get_user_by_id_success(
+        self, authorized_client_as_admin, created_another_user
+    ):
+        response = authorized_client_as_admin.get(f"/users/{created_another_user.id}")
         assert response.status_code == 200
         assert response.json() == {
             "id": str(created_another_user.id),
@@ -209,15 +211,33 @@ class TestGetUserById:
             "created_at": created_another_user.created_at.isoformat(),
         }
 
-    def test_get_user_by_id_not_found(self, authorized_client):
+    def test_get_user_by_id_not_found(self, authorized_client_as_admin):
         non_existent_id = uuid.uuid4()
-        response = authorized_client.get(f"/users/{non_existent_id}")
+        response = authorized_client_as_admin.get(f"/users/{non_existent_id}")
         assert response.status_code == 404
 
-    def test_get_user_by_id_invalid_uuid(self, authorized_client):
-        response = authorized_client.get("/users/invalid-uuid")
+    def test_get_user_by_id_invalid_uuid(self, authorized_client_as_admin):
+        response = authorized_client_as_admin.get("/users/invalid-uuid")
         assert response.status_code == 422
 
     def test_get_user_by_id_unauthorized(self, created_user, client):
         response = client.get(f"/users/{created_user.id}")
+        assert response.status_code == 403
+
+    def test_get_user_by_id_non_admin(self, authorized_client, created_another_user):
+        response = authorized_client.get(f"/users/{created_another_user.id}")
+        assert response.status_code == 403
+
+
+class TestGetAllUsers:
+    """GET /users/all"""
+
+    def test_admin_can_get_all_users(self, authorized_client_as_admin, created_user):
+        response = authorized_client_as_admin.get("/users/all")
+
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+
+    def test_non_admin_cannot_get_all_users(self, authorized_client):
+        response = authorized_client.get("/users/all")
         assert response.status_code == 403
