@@ -54,7 +54,7 @@ def client(app: FastAPI, db_session: Session) -> Generator[TestClient, Any, None
 
 
 @pytest.fixture
-def created_user(db_session):
+def user(db_session):
     user_data = schemas.UserCreate(
         username="testuser",
         email="test@example.com",
@@ -65,7 +65,7 @@ def created_user(db_session):
 
 
 @pytest.fixture
-def created_another_user(db_session):
+def another_user(db_session):
     user_data = schemas.UserCreate(
         username="otheruser",
         email="other@example.com",
@@ -76,15 +76,21 @@ def created_another_user(db_session):
 
 
 @pytest.fixture
+def admin(user, db_session):
+    user.role = models.UserRole.Admin
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
 def mock_send_verification_email(mocker):
     return mocker.patch("app.routers.users.send_verification_email")
 
 
 @pytest.fixture
-def authorized_client(client, created_user):
-    token = create_access_token(
-        {"sub": str(created_user.id)}, ACCESS_TOKEN_EXPIRE_MINUTES
-    )
+def authorized_client(client, user):
+    token = create_access_token({"sub": str(user.id)}, ACCESS_TOKEN_EXPIRE_MINUTES)
     client.headers = {
         **client.headers,
         "Authorization": f"Bearer {token}",
@@ -93,13 +99,5 @@ def authorized_client(client, created_user):
 
 
 @pytest.fixture
-def authorized_client_as_admin(client, created_user):
-    created_user.role = models.UserRole.Admin
-    token = create_access_token(
-        {"sub": str(created_user.id)}, ACCESS_TOKEN_EXPIRE_MINUTES
-    )
-    client.headers = {
-        **client.headers,
-        "Authorization": f"Bearer {token}",
-    }
-    return client
+def authorized_client_as_admin(authorized_client, admin):
+    return authorized_client
