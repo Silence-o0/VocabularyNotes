@@ -26,11 +26,10 @@ def get_language_by_code(code: str, db: Session):
 
 
 def get_all_languages(db: Session):
-    langs = db.scalars(select(models.Language)).all()
-    return langs
+    return db.scalars(select(models.Language)).all()
 
 
-def delete_language(lang_code, db: Session):
+def delete_language(lang_code: str, db: Session):
     lang = get_language_by_code(lang_code, db)
     db.delete(lang)
     db.commit()

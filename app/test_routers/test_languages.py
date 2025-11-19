@@ -85,29 +85,29 @@ class TestUpdateLangName:
     def test_update_name_success(
         self, authorized_client_as_admin, language, db_session
     ):
-        new_name = "British English"
+        new_name = {"name": "British English"}
         response = authorized_client_as_admin.patch(
-            f"/languages/{language.code}", params={"new_name": new_name}
+            f"/languages/{language.code}", json=new_name
         )
         assert response.status_code == 200
         updated_language = lang_service.get_language_by_code(language.code, db_session)
-        assert updated_language.name == new_name
+        assert updated_language.name == new_name["name"]
 
     def test_update_lang_name_non_admin(self, client, language):
-        new_name = "British English"
-        response = client.patch(
-            f"/languages/{language.code}", params={"new_name": new_name}
-        )
+        new_name = {"name": "British English"}
+        response = client.patch(f"/languages/{language.code}", json=new_name)
         assert response.status_code == 403
 
     def test_update_lang_name_not_found(self, authorized_client_as_admin):
+        new_name = {"name": "British English"}
         response = authorized_client_as_admin.patch(
-            "/languages/nonexistent", params={"new_name": "New Name"}
+            "/languages/nonexistent", json=new_name
         )
         assert response.status_code == 404
 
     def test_update_lang_name_empty_name(self, authorized_client_as_admin, language):
+        new_name = {"name": ""}
         response = authorized_client_as_admin.patch(
-            f"/languages/{language.code}", params={"new_name": ""}
+            f"/languages/{language.code}", json=new_name
         )
         assert response.status_code == 422

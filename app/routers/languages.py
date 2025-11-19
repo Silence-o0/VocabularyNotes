@@ -1,7 +1,5 @@
-from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import Field
 
 from app import schemas
 from app.dependencies import AdminRoleDep, DbSessionDep
@@ -64,18 +62,18 @@ def get_language_by_code(lang_code: str, db: DbSessionDep) -> schemas.LanguageSc
 
 @router.patch("/{lang_code}", status_code=status.HTTP_200_OK)
 def update_lang_name(
-    new_name: Annotated[str, Field(min_length=1)],
+    body: schemas.LanguageUpdate,
     lang_code: str,
     current_user: AdminRoleDep,
     db: DbSessionDep,
 ) -> None:
     try:
         lang = lang_service.get_language_by_code(lang_code, db)
-        if lang.name == new_name:
+        if lang.name == body.name:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
-        lang.name = new_name
+        lang.name = body.name
         db.commit()
     except NotFoundError:
         raise HTTPException(
