@@ -13,7 +13,7 @@ class TestCreateLang:
         assert response.status_code == 201
         assert response.json() == lang_data
 
-    def test_create_user_missing_fields(self, authorized_client_as_admin):
+    def test_create_lang_missing_fields(self, authorized_client_as_admin):
         incomplete_data = {
             "code": "en-UK",
         }
@@ -77,3 +77,37 @@ class TestGetLanguageByCode:
     def test_get_languages_by_code_not_found(self, client):
         response = client.get("/languages/code")
         assert response.status_code == 404
+
+
+class TestUpdateLangName:
+    """PATCH /languages/{lang_code}"""
+
+    def test_update_name_success(
+        self, authorized_client_as_admin, language, db_session
+    ):
+        new_name = "British English"
+        response = authorized_client_as_admin.patch(
+            f"/languages/{language.code}", params={"new_name": new_name}
+        )
+        assert response.status_code == 200
+        updated_language = lang_service.get_language_by_code(language.code, db_session)
+        assert updated_language.name == new_name
+
+    def test_update_lang_name_non_admin(self, client, language):
+        new_name = "British English"
+        response = client.patch(
+            f"/languages/{language.code}", params={"new_name": new_name}
+        )
+        assert response.status_code == 403
+
+    def test_update_lang_name_not_found(self, authorized_client_as_admin):
+        response = authorized_client_as_admin.patch(
+            "/languages/nonexistent", params={"new_name": "New Name"}
+        )
+        assert response.status_code == 404
+
+    def test_update_lang_name_empty_name(self, authorized_client_as_admin, language):
+        response = authorized_client_as_admin.patch(
+            f"/languages/{language.code}", params={"new_name": ""}
+        )
+        assert response.status_code == 422

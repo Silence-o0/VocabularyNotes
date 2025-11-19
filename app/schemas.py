@@ -52,4 +52,4 @@ class LanguageSchema(BaseModel):
     code: Annotated[
         str, Field(min_length=2, max_length=5, pattern=r"^[a-z]{2}(-[A-Z]{2})?$")
     ]
-    name: str
+    name: Annotated[str, Field(min_length=1)]
