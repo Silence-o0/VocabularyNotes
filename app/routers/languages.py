@@ -30,7 +30,9 @@ def create_language(
 
 
 @router.delete("/{lang_code}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_language(lang_code: str, db: DbSessionDep, current_user: AdminRoleDep) -> None:
+def delete_language(
+    lang_code: str, db: DbSessionDep, current_user: AdminRoleDep
+) -> None:
     try:
         return lang_service.delete_language(lang_code, db)
     except NotFoundError:
@@ -40,9 +42,18 @@ def delete_language(lang_code: str, db: DbSessionDep, current_user: AdminRoleDep
 @router.get(
     "/all", response_model=list[schemas.LanguageSchema], status_code=status.HTTP_200_OK
 )
-def get_all_languages(
-    db: DbSessionDep
-) -> list[schemas.LanguageSchema]:
+def get_all_languages(db: DbSessionDep) -> list[schemas.LanguageSchema]:
     return lang_service.get_all_languages(db)
 
 
+@router.get(
+    "/{lang_code}",
+    response_model=schemas.LanguageSchema,
+    status_code=status.HTTP_200_OK,
+)
+def get_language_by_code(lang_code: str, db: DbSessionDep) -> schemas.LanguageSchema:
+    try:
+        lang = lang_service.get_language_by_code(lang_code, db)
+    except NotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from None
+    return lang

@@ -1,7 +1,7 @@
 import pytest
+
 from app.exceptions import NotFoundError
 from app.services import languages as lang_service
-from app import schemas
 
 
 class TestCreateLang:
@@ -37,7 +37,9 @@ class TestCreateLang:
 class TestDeleteLanguage:
     """DELETE /languages/{lang_code}"""
 
-    def test_delete_language_success(self, authorized_client_as_admin, db_session, language):
+    def test_delete_language_success(
+        self, authorized_client_as_admin, db_session, language
+    ):
         response = authorized_client_as_admin.delete(f"/languages/{language.code}")
         assert response.status_code == 204
         with pytest.raises(NotFoundError):
@@ -52,10 +54,26 @@ class TestDeleteLanguage:
         assert response.status_code == 403
 
 
-class TestGetAllUsers:
+class TestGetAllLanguages:
     """GET /languages/all"""
 
     def test_get_all_languages(self, client):
         response = client.get("/languages/all")
         assert response.status_code == 200
         assert isinstance(response.json(), list)
+
+
+class TestGetLanguageByCode:
+    """GET /languages/{lang_code}"""
+
+    def test_get_language_by_code_success(self, client, language):
+        response = client.get(f"/languages/{language.code}")
+        assert response.status_code == 200
+        assert response.json() == {
+            "code": language.code,
+            "name": language.name,
+        }
+
+    def test_get_languages_by_code_not_found(self, client):
+        response = client.get("/languages/code")
+        assert response.status_code == 404

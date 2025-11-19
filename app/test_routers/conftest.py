@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.constants import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.models import Base
-from app.services import users as user_service
 from app.services import languages as lang_service
+from app.services import users as user_service
 from app.utils.auth_utils import create_access_token
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -106,9 +106,6 @@ def authorized_client_as_admin(authorized_client, admin):
 
 @pytest.fixture
 def language(db_session):
-    lang_data = schemas.LanguageSchema(
-        code="en-UK",
-        name="English"
-    )
+    lang_data = schemas.LanguageSchema(code="en-UK", name="English")
     lang = lang_service.create_language(lang_data, db_session)
     return lang
