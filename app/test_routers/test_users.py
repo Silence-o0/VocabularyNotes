@@ -184,7 +184,7 @@ class TestDeleteUser:
 
     def test_delete_user_success(self, authorized_client, user, db_session):
         response = authorized_client.delete("/users/me")
-        assert response.status_code == 200
+        assert response.status_code == 204
         with pytest.raises(NotFoundError):
             user_service.get_user_by_id(user.id, db_session)
 

@@ -1,8 +1,11 @@
+import pytest
+from app.exceptions import NotFoundError
 from app.services import languages as lang_service
+from app import schemas
 
 
 class TestCreateLang:
-    """POST /users/"""
+    """POST /languages/"""
 
     def test_create_lang_success(self, authorized_client_as_admin):
         lang_data = {"code": "en-UK", "name": "English"}
@@ -25,7 +28,34 @@ class TestCreateLang:
         assert response.status_code == 422
         assert lang_service.get_all_languages(db_session) == []
 
-    def test_create_language_non_admin_user(self, authorized_client):
+    def test_create_language_non_admin(self, authorized_client):
         lang_data = {"code": "en-UK", "name": "English"}
         response = authorized_client.post("/languages/", json=lang_data)
         assert response.status_code == 403
+
+
+class TestDeleteLanguage:
+    """DELETE /languages/{lang_code}"""
+
+    def test_delete_language_success(self, authorized_client_as_admin, db_session, language):
+        response = authorized_client_as_admin.delete(f"/languages/{language.code}")
+        assert response.status_code == 204
+        with pytest.raises(NotFoundError):
+            lang_service.get_language_by_code(language.code, db_session)
+
+    def test_delete_language_not_found(self, authorized_client_as_admin):
+        response = authorized_client_as_admin.delete("/languages/nonexistent")
+        assert response.status_code == 404
+
+    def test_delete_language_non_admin(self, authorized_client, db_session, language):
+        response = authorized_client.delete(f"/languages/{language.code}")
+        assert response.status_code == 403
+
+
+class TestGetAllUsers:
+    """GET /languages/all"""
+
+    def test_get_all_languages(self, client):
+        response = client.get("/languages/all")
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)

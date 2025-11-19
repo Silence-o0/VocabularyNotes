@@ -30,6 +30,7 @@ def get_all_languages(db: Session):
     return langs
 
 
-def delete_language(lang, db: Session):
+def delete_language(lang_code, db: Session):
+    lang = get_language_by_code(lang_code, db)
     db.delete(lang)
     db.commit()

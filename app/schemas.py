@@ -46,11 +46,6 @@ class UserResponse(BaseModel):
     created_at: datetime
 
 
-class LanguageCreate(BaseModel):
-    code: str
-    name: str
-
-
 class LanguageSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
