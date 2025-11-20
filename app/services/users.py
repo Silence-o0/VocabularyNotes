@@ -45,8 +45,7 @@ def get_user_by_email(email: str, db: Session):
 
 
 def get_all_users(db: Session):
-    users = db.scalars(select(models.User)).all()
-    return users
+    return db.scalars(select(models.User)).all()
 
 
 def delete_user(user, db: Session):

@@ -113,7 +113,7 @@ def update_password(
     db.commit()
 
 
-@router.delete("/me", status_code=status.HTTP_200_OK)
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 def delete_current_user(current_user: CurrentUserDep, db: DbSessionDep) -> None:
     return user_service.delete_user(current_user, db)
 
