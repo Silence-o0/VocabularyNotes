@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import IntEnum
+from typing import Optional
 
 from sqlalchemy import (
     Column,
@@ -101,11 +102,13 @@ class DictList(Base):
         nullable=False,
         init=False,
     )
-    lang_code: Mapped[str] = mapped_column(ForeignKey("language.code"), init=False)
+    lang_code: Mapped[str | None] = mapped_column(
+        ForeignKey("language.code"), init=False
+    )
     name: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(default_factory=utc_now, init=False)
     user: Mapped["User"] = relationship("User", back_populates="dict_lists", repr=False)
-    language: Mapped["Language"] = relationship(
+    language: Mapped[Optional["Language"]] = relationship(
         "Language", back_populates="dict_lists", repr=False
     )
     max_words_limit: Mapped[int | None] = mapped_column(default=200)
