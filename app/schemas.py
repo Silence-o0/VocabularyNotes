@@ -78,3 +78,12 @@ class DictListResponse(BaseModel):
     name: Annotated[str, Field(min_length=1, max_length=120)]
     created_at: datetime
     max_words_limit: Optional[int] = Field(default=None, gt=0)
+
+
+class DictListUpdate(BaseModel):
+    lang_code: Optional[
+        Annotated[
+            str, Field(min_length=2, max_length=5, pattern=r"^[a-z]{2}(-[A-Z]{2})?$")
+        ]
+    ] = None
+    name: Optional[Annotated[str, Field(min_length=1, max_length=120)]] = None

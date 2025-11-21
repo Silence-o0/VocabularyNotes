@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.constants import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.models import Base
+from app.services import dictlists as dictlist_service
 from app.services import languages as lang_service
 from app.services import users as user_service
 from app.utils.auth_utils import create_access_token
@@ -109,3 +110,11 @@ def language(db_session):
     lang_data = schemas.LanguageSchema(code="en-UK", name="English")
     lang = lang_service.create_language(lang_data, db_session)
     return lang
+
+
+@pytest.fixture
+def dictlist(user, db_session):
+    dictlist = dictlist_service.create_dictlist(
+        schemas.DictListCreate(name="My Vocabulary"), user, db_session
+    )
+    return dictlist

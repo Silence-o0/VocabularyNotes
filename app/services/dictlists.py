@@ -1,5 +1,3 @@
-from uuid import UUID
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -15,7 +13,7 @@ def create_dictlist(dictlist: schemas.DictListCreate, user: models.User, db: Ses
             language = lang_services.get_language_by_code(dictlist.lang_code, db)
 
         db_dictlist = models.DictList(
-            name = dictlist.name,
+            name=dictlist.name,
             max_words_limit=dictlist.max_words_limit,
             language=language,
             user=user,
