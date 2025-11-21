@@ -23,3 +23,40 @@ def create_dictlist(
             status_code=status.HTTP_400_BAD_REQUEST,
         ) from None
     return dictlist
+
+@router.get(
+    "/all", response_model=list[schemas.DictListResponse], status_code=status.HTTP_200_OK
+)
+def get_all_dictlists(current_user: CurrentUserDep) -> list[schemas.DictListResponse]:
+    return current_user.dict_lists
+
+
+@router.get(
+    "/{dictlist_id}",
+    response_model=schemas.DictListResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_user_dictlist_by_id(dictlist_id: int, db: DbSessionDep, current_user: CurrentUserDep) -> schemas.DictListResponse:
+    try:
+        dictlist = dictlist_service.get_dictlist_by_id(dictlist_id, db)
+        if dictlist.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN) from None
+    except NotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from None
+    return dictlist
+
+
+
+@router.delete("/{dictlist_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_language(
+    dictlist_id: int, db: DbSessionDep, current_user: CurrentUserDep
+) -> None:
+    try:
+        dictlist = dictlist_service.get_dictlist_by_id(dictlist_id, db)
+        if dictlist.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN) from None
+        return dictlist_service.delete_dictlist(dictlist_id, db)
+    except NotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from None
+
+

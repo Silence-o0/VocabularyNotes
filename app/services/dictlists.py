@@ -1,8 +1,10 @@
+from uuid import UUID
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.exceptions import AlreadyExistsError
+from app.exceptions import AlreadyExistsError, NotFoundError
 from app.services import languages as lang_services
 
 
@@ -25,3 +27,16 @@ def create_dictlist(dictlist: schemas.DictListCreate, user: models.User, db: Ses
     except IntegrityError:
         db.rollback()
         raise AlreadyExistsError from None
+
+
+def get_dictlist_by_id(dictlist_id: int, db: Session):
+    dictlist = db.get(models.DictList, dictlist_id)
+    if not dictlist:
+        raise NotFoundError
+    return dictlist
+
+
+def delete_dictlist(dictlist_id: int, db: Session):
+    dictlist = get_dictlist_by_id(dictlist_id, db)
+    db.delete(dictlist)
+    db.commit()

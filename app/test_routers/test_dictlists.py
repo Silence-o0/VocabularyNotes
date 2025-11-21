@@ -1,4 +1,7 @@
+import pytest
 from app import schemas
+from app.exceptions import NotFoundError
+from app.services import dictlists as dictlist_service
 
 
 class TestCreateDictList:
@@ -46,4 +49,77 @@ class TestCreateDictList:
     def test_create_dictlist_unauthorized(self, client, language):
         dictlist_data = {"name": "My Vocabulary", "lang_code": language.code}
         response = client.post("/dictlists/", json=dictlist_data)
+        assert response.status_code == 403
+
+
+class TestGetAllDictLists:
+    """GET /dictlists/all"""
+
+    def test_get_all_user_dictlists(self, authorized_client, another_user, db_session):
+        dictlist_service.create_dictlist(
+            schemas.DictListCreate(name="My Vocabulary"),
+            another_user, db_session
+        )
+        response = authorized_client.get("/dictlists/all")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_get_all_user_dictlists_unauthorized(self, client):
+        response = client.get("/dictlists/all")
+        assert response.status_code == 403
+
+
+class TestGetDictListById:
+    """GET /dictlists/{dictlist_id}"""
+
+    def test_get_user_dictlist_by_id_success(self, authorized_client, user, db_session):
+        dictlist = dictlist_service.create_dictlist(
+            schemas.DictListCreate(name="My Vocabulary"),
+            user, db_session
+        )
+        response = authorized_client.get(f"/dictlists/{dictlist.id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "My Vocabulary"
+        assert data["user_id"] == str(user.id)
+
+    def test_get_dictlist_by_id_not_found(self, authorized_client):
+        response = authorized_client.get("/dictlists/123")
+        assert response.status_code == 404
+
+    def test_get_dictlist_by_id_forbidden(self, authorized_client, another_user, db_session):
+        dictlist = dictlist_service.create_dictlist(
+            schemas.DictListCreate(name="My Vocabulary"),
+            another_user, db_session
+        )
+        response = authorized_client.get(f"/dictlists/{dictlist.id}")
+        assert response.status_code == 403
+
+
+class TestDeleteDictList:
+    """DELETE /dictlists/{dictlist_id}"""
+
+    def test_delete_dictlist_success(
+        self, authorized_client, user, db_session
+    ):
+        dictlist = dictlist_service.create_dictlist(
+            schemas.DictListCreate(name="My Vocabulary"),
+            user, db_session
+        )
+        response = authorized_client.delete(f"/dictlists/{dictlist.id}")
+        assert response.status_code == 204
+
+        with pytest.raises(NotFoundError):
+            dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
+
+    def test_delete_dictlist_not_found(self, authorized_client):
+        response = authorized_client.delete("/dictlists/12345")
+        assert response.status_code == 404
+
+    def test_delete_dictlist_forbidden(self, authorized_client, another_user, db_session):
+        dictlist = dictlist_service.create_dictlist(
+            schemas.DictListCreate(name="My Vocabulary"),
+            another_user, db_session
+        )
+        response = authorized_client.delete(f"/dictlists/{dictlist.id}")
         assert response.status_code == 403
