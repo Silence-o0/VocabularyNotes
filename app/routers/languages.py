@@ -40,7 +40,7 @@ def delete_language(
 
 
 @router.get(
-    "/all", response_model=list[schemas.LanguageSchema], status_code=status.HTTP_200_OK
+    "/", response_model=list[schemas.LanguageSchema], status_code=status.HTTP_200_OK
 )
 def get_all_languages(db: DbSessionDep) -> list[schemas.LanguageSchema]:
     return lang_service.get_all_languages(db)

@@ -226,14 +226,14 @@ class TestGetUserById:
 
 
 class TestGetAllUsers:
-    """GET /users/all"""
+    """GET /users/"""
 
     def test_admin_can_get_all_users(self, authorized_client_as_admin):
-        response = authorized_client_as_admin.get("/users/all")
+        response = authorized_client_as_admin.get("/users/")
 
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
     def test_non_admin_cannot_get_all_users(self, authorized_client):
-        response = authorized_client.get("/users/all")
+        response = authorized_client.get("/users/")
         assert response.status_code == 403

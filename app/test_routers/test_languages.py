@@ -55,10 +55,10 @@ class TestDeleteLanguage:
 
 
 class TestGetAllLanguages:
-    """GET /languages/all"""
+    """GET /languages/"""
 
     def test_get_all_languages(self, client):
-        response = client.get("/languages/all")
+        response = client.get("/languages/")
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
