@@ -113,8 +113,10 @@ def language(db_session):
 
 
 @pytest.fixture
-def dictlist(user, db_session):
+def dictlist(user, language, db_session):
     dictlist = dictlist_service.create_dictlist(
-        schemas.DictListCreate(name="My Vocabulary"), user, db_session
+        schemas.DictListCreate(name="My Vocabulary", lang_code="en-UK"),
+        user,
+        db_session,
     )
     return dictlist

@@ -54,18 +54,18 @@ class TestCreateDictList:
 
 
 class TestGetAllDictLists:
-    """GET /dictlists/all"""
+    """GET /dictlists/"""
 
     def test_get_all_user_dictlists(self, authorized_client, another_user, db_session):
         dictlist_service.create_dictlist(
             schemas.DictListCreate(name="My Vocabulary"), another_user, db_session
         )
-        response = authorized_client.get("/dictlists/all")
+        response = authorized_client.get("/dictlists/")
         assert response.status_code == 200
         assert response.json() == []
 
     def test_get_all_user_dictlists_unauthorized(self, client):
-        response = client.get("/dictlists/all")
+        response = client.get("/dictlists/")
         assert response.status_code == 403
 
 
@@ -123,38 +123,31 @@ class TestUpdateDictList:
     def test_update_dictlist_name_success(
         self, authorized_client, dictlist, db_session
     ):
-        update_data = {"name": "New Name"}
         response = authorized_client.patch(
-            f"/dictlists/{dictlist.id}", json=update_data
+            f"/dictlists/{dictlist.id}", json={"name": "New Name"}
         )
         assert response.status_code == 200
-
         updated_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
-        assert updated_dictlist.name == update_data["name"]
+        assert updated_dictlist.name == "New Name"
+        assert updated_dictlist.language.code == "en-UK"
 
-    def test_update_dictlist_language_success(
-        self, authorized_client, dictlist, language, db_session
-    ):
-        update_data = {"lang_code": language.code}
+    def test_update_dictlist_name_none(self, authorized_client, dictlist):
         response = authorized_client.patch(
-            f"/dictlists/{dictlist.id}", json=update_data
+            f"/dictlists/{dictlist.id}", json={"name": None}
         )
-        assert response.status_code == 200
-
-        updated_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
-        assert updated_dictlist.language.code == update_data["lang_code"]
+        assert response.status_code == 400
 
     def test_update_dictlist_language_none_success(
         self, authorized_client, dictlist, db_session
     ):
-        update_data = {"lang_code": None}
         response = authorized_client.patch(
-            f"/dictlists/{dictlist.id}", json=update_data
+            f"/dictlists/{dictlist.id}", json={"lang_code": None}
         )
         assert response.status_code == 200
 
         updated_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
         assert updated_dictlist.language is None
+        assert updated_dictlist.name == "My Vocabulary"
 
     def test_update_dictlist_not_found(self, authorized_client):
         response = authorized_client.patch(

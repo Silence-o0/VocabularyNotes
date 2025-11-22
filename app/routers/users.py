@@ -119,7 +119,7 @@ def delete_current_user(current_user: CurrentUserDep, db: DbSessionDep) -> None:
 
 
 @router.get(
-    "/all", response_model=list[schemas.UserResponse], status_code=status.HTTP_200_OK
+    "/", response_model=list[schemas.UserResponse], status_code=status.HTTP_200_OK
 )
 def get_all_users(
     db: DbSessionDep, current_user: AdminRoleDep

@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, status
-from pydantic_core import PydanticUndefined
 
 from app import schemas
 from app.dependencies import CurrentUserDep, DbSessionDep
@@ -28,7 +27,7 @@ def create_dictlist(
 
 
 @router.get(
-    "/all",
+    "/",
     response_model=list[schemas.DictListResponse],
     status_code=status.HTTP_200_OK,
 )
@@ -83,15 +82,22 @@ def update_dictlist(
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
             )
+        update_data = body.model_dump(exclude_unset=True)
 
-        if body.name is not None:
-            dictlist.name = body.name
+        if "name" in update_data:
+            if update_data["name"] is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            dictlist.name = update_data["name"]
 
-        if body.lang_code is not PydanticUndefined:
-            if body.lang_code is None:
+        if "lang_code" in update_data:
+            if update_data["lang_code"] is None:
                 dictlist.language = None
             else:
-                language = lang_service.get_language_by_code(body.lang_code, db)
+                language = lang_service.get_language_by_code(
+                    update_data["lang_code"], db
+                )
                 dictlist.language = language
 
         db.commit()
