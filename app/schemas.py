@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, List
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, PositiveInt, SecretStr
@@ -92,3 +92,25 @@ class DictListUpdate(BaseModel):
 
     lang_code: LanguageCode | None = None
     name: DictListName | None = None
+
+
+WordNameAndTranslation = Annotated[str, Field(min_length=1, max_length=200)]
+WordNote = Annotated[str, Field(min_length=1, max_length=800)]
+
+
+class WordCreate(BaseModel):
+    new_word: WordNameAndTranslation
+    translation: WordNameAndTranslation | None = None
+    note: WordNote | None = None
+    lang_code: LanguageCode
+    contexts: List[str] | None = None
+
+
+class WordResponse(BaseModel):
+    id: int
+    user_id: UUID
+    new_word: WordNameAndTranslation
+    translation: WordNameAndTranslation | None = None
+    note: WordNote | None = None
+    language: LanguageSchema
+    created_at: datetime
