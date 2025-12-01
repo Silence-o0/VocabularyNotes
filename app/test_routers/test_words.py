@@ -1,4 +1,5 @@
 from app import schemas
+from app.services import words as word_service
 
 
 class TestCreateWord:
@@ -64,4 +65,30 @@ class TestCreateWord:
             "lang_code": "en-UK",
         }
         response = client.post("/words/", json=word_data)
+        assert response.status_code == 403
+
+
+class TestGetWordById:
+    """GET /words/{word_id}"""
+
+    def test_get_user_word_by_id_success(self, authorized_client, word):
+        response = authorized_client.get(f"/words/{word.id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["new_word"] == "animal"
+        assert data["user_id"] == str(word.user_id)
+
+    def test_get_word_by_id_not_found(self, authorized_client):
+        response = authorized_client.get("/words/123")
+        assert response.status_code == 404
+
+    def test_get_word_by_id_forbidden(
+        self, authorized_client, another_user, language, db_session
+    ):
+        word = word_service.create_word(
+        schemas.WordCreate(new_word="animal", lang_code="en-UK"),
+        another_user,
+        db_session,
+        )
+        response = authorized_client.get(f"/words/{word.id}")
         assert response.status_code == 403

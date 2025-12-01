@@ -115,14 +115,12 @@ class WordResponse(BaseModel):
     note: WordNote | None = None
     language: LanguageSchema
     created_at: datetime
-    contexts: List[str] = []
+    contexts: list[str] = []
 
     @field_validator('contexts', mode='before')
     @classmethod
     def extract_context_strings(cls, v):
-        if v is None:
-            return []
-        if v and isinstance(v[0], models.WordContext):
+        if isinstance(v, list) and len(v) > 0 and isinstance(v[0], models.WordContext):
             return [ctx.context for ctx in v]
         return v
 

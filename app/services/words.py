@@ -2,7 +2,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.exceptions import AlreadyExistsError
+from app.exceptions import AlreadyExistsError, NotFoundError
 from app.services import languages as lang_services
 
 
@@ -30,3 +30,9 @@ def create_word(word: schemas.WordCreate, user: models.User, db: Session) -> mod
         db.rollback()
         raise AlreadyExistsError from None
 
+
+def get_word_by_id(word_id: int, db: Session):
+    word = db.get(models.Word, word_id)
+    if not word:
+        raise NotFoundError
+    return word
