@@ -2,7 +2,15 @@ from datetime import datetime
 from typing import Annotated, List
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, PositiveInt, SecretStr, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    PositiveInt,
+    SecretStr,
+    field_validator,
+)
 
 from app import models
 from app.models import UserRole
@@ -117,11 +125,9 @@ class WordResponse(BaseModel):
     created_at: datetime
     contexts: list[str] = []
 
-    @field_validator('contexts', mode='before')
+    @field_validator("contexts", mode="before")
     @classmethod
     def extract_context_strings(cls, v):
         if isinstance(v, list) and len(v) > 0 and isinstance(v[0], models.WordContext):
             return [ctx.context for ctx in v]
         return v
-
-

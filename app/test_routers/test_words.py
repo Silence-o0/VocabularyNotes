@@ -1,4 +1,5 @@
 import pytest
+
 from app import schemas
 from app.exceptions import NotFoundError
 from app.services import words as word_service
@@ -16,8 +17,8 @@ class TestCreateWord:
             "contexts": [
                 "Wild animals live in the forest",
                 " My favorite animal is a dog ",
-                ""
-            ]
+                "",
+            ],
         }
         response = authorized_client.post("/words/", json=word_data)
         assert response.status_code == 201
@@ -33,8 +34,8 @@ class TestCreateWord:
             "created_at": data["created_at"],
             "contexts": [
                 "Wild animals live in the forest",
-                "My favorite animal is a dog"
-            ]
+                "My favorite animal is a dog",
+            ],
         }
         assert data == expected_data
 
@@ -84,9 +85,7 @@ class TestGetWordById:
         response = authorized_client.get("/words/123")
         assert response.status_code == 404
 
-    def test_get_word_by_id_forbidden(
-        self, authorized_client, another_user_word
-    ):
+    def test_get_word_by_id_forbidden(self, authorized_client, another_user_word):
         response = authorized_client.get(f"/words/{another_user_word.id}")
         assert response.status_code == 403
 
@@ -118,7 +117,6 @@ class TestDeleteWord:
         response = authorized_client.delete("/words/12345")
         assert response.status_code == 404
 
-    def test_delete_word_forbidden(
-        self, authorized_client, another_user_word):
+    def test_delete_word_forbidden(self, authorized_client, another_user_word):
         response = authorized_client.delete(f"/words/{another_user_word.id}")
         assert response.status_code == 403

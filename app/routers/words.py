@@ -52,9 +52,7 @@ def get_all_words(current_user: CurrentUserDep) -> list[schemas.WordResponse]:
 
 
 @router.delete("/{word_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_word(
-    word_id: int, db: DbSessionDep, current_user: CurrentUserDep
-) -> None:
+def delete_word(word_id: int, db: DbSessionDep, current_user: CurrentUserDep) -> None:
     try:
         word = word_service.get_word_by_id(word_id, db)
         if word.user_id != current_user.id:
