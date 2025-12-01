@@ -40,3 +40,12 @@ def get_user_word_by_id(
     except NotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from None
     return word
+
+
+@router.get(
+    "/",
+    response_model=list[schemas.WordResponse],
+    status_code=status.HTTP_200_OK,
+)
+def get_all_words(current_user: CurrentUserDep) -> list[schemas.WordResponse]:
+    return current_user.words

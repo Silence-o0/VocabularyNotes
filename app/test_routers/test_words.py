@@ -92,3 +92,21 @@ class TestGetWordById:
         )
         response = authorized_client.get(f"/words/{word.id}")
         assert response.status_code == 403
+
+
+class TestGetAllWords:
+    """GET /words/"""
+
+    def test_get_all_user_words(self, authorized_client, another_user, language, db_session):
+        word_service.create_word(
+        schemas.WordCreate(new_word="animal", lang_code="en-UK"),
+        another_user,
+        db_session,
+        )
+        response = authorized_client.get("/words/")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_get_all_user_words_unauthorized(self, client):
+        response = client.get("/words/")
+        assert response.status_code == 403
