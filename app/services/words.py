@@ -6,7 +6,7 @@ from app.exceptions import AlreadyExistsError
 from app.services import languages as lang_services
 
 
-def create_word(word: schemas.WordCreate, user: models.User, db: Session):
+def create_word(word: schemas.WordCreate, user: models.User, db: Session) -> models.Word:
     try:
         language = lang_services.get_language_by_code(word.lang_code, db)
 
@@ -17,10 +17,16 @@ def create_word(word: schemas.WordCreate, user: models.User, db: Session):
             language=language,
             user=user,
         )
+
+        if word.contexts:
+            db_word.contexts_list = [ctx.strip() for ctx in word.contexts if ctx.strip()]
+
         db.add(db_word)
         db.commit()
         db.refresh(db_word)
         return db_word
+
     except IntegrityError:
         db.rollback()
         raise AlreadyExistsError from None
+

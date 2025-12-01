@@ -10,6 +10,11 @@ class TestCreateWord:
             "translation": "тварина",
             "note": "some notes",
             "lang_code": "en-UK",
+            "contexts": [
+                "Wild animals live in the forest",
+                " My favorite animal is a dog ",
+                ""
+            ]
         }
         response = authorized_client.post("/words/", json=word_data)
         assert response.status_code == 201
@@ -23,6 +28,10 @@ class TestCreateWord:
             "note": word_data["note"],
             "language": schemas.LanguageSchema.model_validate(language).model_dump(),
             "created_at": data["created_at"],
+            "contexts": [
+                "Wild animals live in the forest",
+                "My favorite animal is a dog"
+            ]
         }
         assert data == expected_data
 
