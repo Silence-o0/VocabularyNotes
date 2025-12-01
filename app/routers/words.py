@@ -49,3 +49,16 @@ def get_user_word_by_id(
 )
 def get_all_words(current_user: CurrentUserDep) -> list[schemas.WordResponse]:
     return current_user.words
+
+
+@router.delete("/{word_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_word(
+    word_id: int, db: DbSessionDep, current_user: CurrentUserDep
+) -> None:
+    try:
+        word = word_service.get_word_by_id(word_id, db)
+        if word.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN) from None
+        return word_service.delete_word(word_id, db)
+    except NotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from None

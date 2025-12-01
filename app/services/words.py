@@ -36,3 +36,9 @@ def get_word_by_id(word_id: int, db: Session):
     if not word:
         raise NotFoundError
     return word
+
+
+def delete_word(word_id: int, db: Session):
+    word = get_word_by_id(word_id, db)
+    db.delete(word)
+    db.commit()

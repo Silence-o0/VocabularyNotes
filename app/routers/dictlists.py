@@ -53,7 +53,7 @@ def get_user_dictlist_by_id(
 
 
 @router.delete("/{dictlist_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_language(
+def delete_dictlist(
     dictlist_id: int, db: DbSessionDep, current_user: CurrentUserDep
 ) -> None:
     try:

@@ -1,4 +1,6 @@
+import pytest
 from app import schemas
+from app.exceptions import NotFoundError
 from app.services import words as word_service
 
 
@@ -83,30 +85,40 @@ class TestGetWordById:
         assert response.status_code == 404
 
     def test_get_word_by_id_forbidden(
-        self, authorized_client, another_user, language, db_session
+        self, authorized_client, another_user_word
     ):
-        word = word_service.create_word(
-        schemas.WordCreate(new_word="animal", lang_code="en-UK"),
-        another_user,
-        db_session,
-        )
-        response = authorized_client.get(f"/words/{word.id}")
+        response = authorized_client.get(f"/words/{another_user_word.id}")
         assert response.status_code == 403
 
 
 class TestGetAllWords:
     """GET /words/"""
 
-    def test_get_all_user_words(self, authorized_client, another_user, language, db_session):
-        word_service.create_word(
-        schemas.WordCreate(new_word="animal", lang_code="en-UK"),
-        another_user,
-        db_session,
-        )
+    def test_get_all_user_words(self, authorized_client, another_user_word):
         response = authorized_client.get("/words/")
         assert response.status_code == 200
         assert response.json() == []
 
     def test_get_all_user_words_unauthorized(self, client):
         response = client.get("/words/")
+        assert response.status_code == 403
+
+
+class TestDeleteWord:
+    """DELETE /words/{word_id}"""
+
+    def test_delete_word_success(self, authorized_client, word, db_session):
+        response = authorized_client.delete(f"/words/{word.id}")
+        assert response.status_code == 204
+
+        with pytest.raises(NotFoundError):
+            word_service.get_word_by_id(word.id, db_session)
+
+    def test_delete_word_not_found(self, authorized_client):
+        response = authorized_client.delete("/words/12345")
+        assert response.status_code == 404
+
+    def test_delete_word_forbidden(
+        self, authorized_client, another_user_word):
+        response = authorized_client.delete(f"/words/{another_user_word.id}")
         assert response.status_code == 403

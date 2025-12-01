@@ -131,3 +131,13 @@ def word(user, language, db_session):
         db_session,
     )
     return word
+
+
+@pytest.fixture
+def another_user_word(another_user, language, db_session):
+    word = word_service.create_word(
+        schemas.WordCreate(new_word="animal", lang_code="en-UK"),
+        another_user,
+        db_session,
+    )
+    return word
