@@ -136,7 +136,14 @@ def another_user_dictlist(another_user, language, db_session):
 @pytest.fixture
 def word(user, language, db_session):
     word = word_service.create_word(
-        schemas.WordCreate(new_word="animal", lang_code="en-UK"),
+        schemas.WordCreate(
+            new_word="animal",
+            lang_code="en-UK",
+            contexts=[
+                "Wild animals live in the forest",
+                "My favorite animal is a dog",
+            ],
+        ),
         user,
         db_session,
     )

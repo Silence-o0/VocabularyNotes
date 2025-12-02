@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, List
+from typing import Annotated
 from uuid import UUID
 
 from pydantic import (
@@ -112,7 +112,7 @@ class WordCreate(BaseModel):
     translation: WordNameAndTranslation | None = None
     note: WordNote | None = None
     lang_code: LanguageCode
-    contexts: List[str] | None = None
+    contexts: list[str] | None = None
 
 
 class WordResponse(BaseModel):
@@ -131,3 +131,13 @@ class WordResponse(BaseModel):
         if isinstance(v, list) and len(v) > 0 and isinstance(v[0], models.WordContext):
             return [ctx.context for ctx in v]
         return v
+
+
+class WordUpdate(BaseModel):
+    new_word: str | None = None
+    translation: str | None = None
+    note: str | None = None
+    lang_code: str | None = None
+    contexts: list[str] | None = None
+
+    model_config = ConfigDict(extra="ignore")

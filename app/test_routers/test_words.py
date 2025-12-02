@@ -120,3 +120,56 @@ class TestDeleteWord:
     def test_delete_word_forbidden(self, authorized_client, another_user_word):
         response = authorized_client.delete(f"/words/{another_user_word.id}")
         assert response.status_code == 403
+
+
+class TestUpdateWord:
+    """PATCH /words/{word_id}"""
+
+    def test_update_word_name_success(self, authorized_client, word, db_session):
+        response = authorized_client.patch(
+            f"/words/{word.id}", json={"translation": "тваринка"}
+        )
+        assert response.status_code == 200
+        updated_word = word_service.get_word_by_id(word.id, db_session)
+        assert updated_word.new_word == "animal"
+        assert updated_word.translation == "тваринка"
+
+    def test_update_word_name_none(self, authorized_client, word):
+        response = authorized_client.patch(f"/words/{word.id}", json={"new_word": None})
+        assert response.status_code == 400
+
+    def test_update_word_language_none(self, authorized_client, word, db_session):
+        response = authorized_client.patch(
+            f"/words/{word.id}", json={"lang_code": None}
+        )
+        assert response.status_code == 400
+
+        updated_word = word_service.get_word_by_id(word.id, db_session)
+        assert updated_word.language is not None
+
+    def test_update_word_context_success(self, authorized_client, word, db_session):
+        response = authorized_client.patch(
+            f"/words/{word.id}", json={"contexts": ["Wild animals live in the forest"]}
+        )
+        assert response.status_code == 200
+        updated_word = word_service.get_word_by_id(word.id, db_session)
+        assert len(updated_word.contexts_list) == 1
+        assert updated_word.contexts_list[0] == "Wild animals live in the forest"
+
+    def test_update_word_context_empty(self, authorized_client, word, db_session):
+        response = authorized_client.patch(f"/words/{word.id}", json={"contexts": []})
+        assert response.status_code == 200
+        updated_word = word_service.get_word_by_id(word.id, db_session)
+        assert updated_word.contexts_list == []
+
+    def test_update_word_not_found(self, authorized_client):
+        response = authorized_client.patch(
+            "/words/999999", json={"new_name": "New word"}
+        )
+        assert response.status_code == 404
+
+    def test_update_word_other_user(self, authorized_client, another_user_word):
+        response = authorized_client.patch(
+            f"/words/{another_user_word.id}", json={"new_word": "New word"}
+        )
+        assert response.status_code == 403

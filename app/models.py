@@ -152,7 +152,11 @@ class Word(Base):
         repr=False,
     )
     contexts: Mapped[list[WordContext]] = relationship(
-        "WordContext", back_populates="word", init=False, repr=False
+        "WordContext",
+        back_populates="word",
+        init=False,
+        repr=False,
+        cascade="all, delete-orphan",
     )
 
 
