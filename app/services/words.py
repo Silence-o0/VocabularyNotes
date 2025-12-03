@@ -21,9 +21,7 @@ def create_word(
         )
 
         if word.contexts:
-            db_word.contexts_list = [
-                ctx.strip() for ctx in word.contexts if ctx.strip()
-            ]
+            db_word.contexts_list = word.contexts
 
         db.add(db_word)
         db.commit()

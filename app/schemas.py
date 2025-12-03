@@ -114,6 +114,11 @@ class WordCreate(BaseModel):
     lang_code: LanguageCode
     contexts: list[str] | None = None
 
+    @field_validator("contexts")
+    @classmethod
+    def strip_and_filter_contexts(cls, values):
+        return [v.strip() for v in values if v.strip()]
+
 
 class WordResponse(BaseModel):
     id: int
@@ -134,10 +139,15 @@ class WordResponse(BaseModel):
 
 
 class WordUpdate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     new_word: str | None = None
     translation: str | None = None
     note: str | None = None
     lang_code: str | None = None
     contexts: list[str] | None = None
 
-    model_config = ConfigDict(extra="ignore")
+    @field_validator("contexts")
+    @classmethod
+    def strip_and_filter_contexts(cls, values):
+        return [v.strip() for v in values if v.strip()]

@@ -149,12 +149,20 @@ class TestUpdateWord:
 
     def test_update_word_context_success(self, authorized_client, word, db_session):
         response = authorized_client.patch(
-            f"/words/{word.id}", json={"contexts": ["Wild animals live in the forest"]}
+            f"/words/{word.id}",
+            json={
+                "contexts": [
+                    "Wild animals live in the forest",
+                    "Yesterday I saw few cute animals",
+                    " ",
+                ]
+            },
         )
         assert response.status_code == 200
         updated_word = word_service.get_word_by_id(word.id, db_session)
-        assert len(updated_word.contexts_list) == 1
-        assert updated_word.contexts_list[0] == "Wild animals live in the forest"
+        assert len(updated_word.contexts_list) == 2
+        assert "Wild animals live in the forest" in updated_word.contexts_list
+        assert "Yesterday I saw few cute animals" in updated_word.contexts_list
 
     def test_update_word_context_empty(self, authorized_client, word, db_session):
         response = authorized_client.patch(f"/words/{word.id}", json={"contexts": []})

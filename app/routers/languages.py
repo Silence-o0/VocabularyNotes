@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app import schemas
+from app import models, schemas
 from app.dependencies import AdminRoleDep, DbSessionDep
 from app.exceptions import AlreadyExistsError, NotFoundError
 from app.services import languages as lang_service
@@ -15,7 +15,7 @@ def create_language(
     lang: schemas.LanguageSchema,
     db: DbSessionDep,
     current_user: AdminRoleDep,
-) -> schemas.LanguageSchema:
+) -> models.Language:
     try:
         lang = lang_service.create_language(lang, db)
     except ValueError:

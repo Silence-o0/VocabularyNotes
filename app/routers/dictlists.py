@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app import schemas
+from app import models, schemas
 from app.dependencies import CurrentUserDep, DbSessionDep
 from app.exceptions import NotFoundError
 from app.services import dictlists as dictlist_service
@@ -16,7 +16,7 @@ def create_dictlist(
     dictlist: schemas.DictListCreate,
     db: DbSessionDep,
     current_user: CurrentUserDep,
-) -> schemas.DictListResponse:
+) -> models.DictList:
     try:
         dictlist = dictlist_service.create_dictlist(dictlist, current_user, db)
     except (ValueError, NotFoundError):

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app import schemas
+from app import models, schemas
 from app.dependencies import CurrentUserDep, DbSessionDep
 from app.exceptions import NotFoundError
 from app.services import languages as lang_service
@@ -16,7 +16,7 @@ def create_word(
     word: schemas.WordCreate,
     db: DbSessionDep,
     current_user: CurrentUserDep,
-) -> schemas.WordResponse:
+) -> models.Word:
     try:
         word = word_service.create_word(word, current_user, db)
     except (ValueError, NotFoundError):
@@ -108,9 +108,7 @@ def update_word(
 
         if "contexts" in update_data:
             if update_data["contexts"] is not None:
-                word.contexts_list = [
-                    ctx.strip() for ctx in update_data["contexts"] if ctx.strip()
-                ]
+                word.contexts_list = update_data["contexts"]
 
         db.commit()
         db.refresh(word)

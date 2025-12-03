@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 
-from app import schemas
+from app import models, schemas
 from app.constants import VERIFY_TOKEN_EXPIRE_MINUTES
 from app.dependencies import AdminRoleDep, CurrentUserDep, DbSessionDep
 from app.exceptions import AlreadyExistsError, NotFoundError
@@ -21,7 +21,7 @@ def create_user(
     background_tasks: BackgroundTasks,
     request: Request,
     db: DbSessionDep,
-) -> schemas.UserResponse:
+) -> models.User:
     try:
         user = user_service.create_user(user, db)
     except ValueError:
