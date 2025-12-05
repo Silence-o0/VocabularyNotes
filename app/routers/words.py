@@ -33,7 +33,7 @@ def create_word(
 )
 def get_user_word_by_id(
     word_id: int, db: DbSessionDep, current_user: CurrentUserDep
-) -> schemas.WordResponse:
+) -> models.Word:
     try:
         word = word_service.get_word_by_id(word_id, db)
         if word.user_id != current_user.id:
@@ -48,7 +48,7 @@ def get_user_word_by_id(
     response_model=list[schemas.WordResponse],
     status_code=status.HTTP_200_OK,
 )
-def get_all_words(current_user: CurrentUserDep) -> list[schemas.WordResponse]:
+def get_all_words(current_user: CurrentUserDep) -> list[models.Word]:
     return current_user.words
 
 
@@ -73,7 +73,7 @@ def update_word(
     body: schemas.WordUpdate,
     db: DbSessionDep,
     current_user: CurrentUserDep,
-) -> schemas.WordResponse:
+) -> models.Word:
     try:
         word = word_service.get_word_by_id(word_id, db)
         if word.user_id != current_user.id:

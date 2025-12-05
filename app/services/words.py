@@ -6,9 +6,7 @@ from app.exceptions import AlreadyExistsError, NotFoundError
 from app.services import languages as lang_services
 
 
-def create_word(
-    word: schemas.WordCreate, user: models.User, db: Session
-) -> models.Word:
+def create_word(word: schemas.WordCreate, user: models.User, db: Session):
     try:
         language = lang_services.get_language_by_code(word.lang_code, db)
 

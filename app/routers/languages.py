@@ -42,7 +42,7 @@ def delete_language(
 @router.get(
     "/", response_model=list[schemas.LanguageSchema], status_code=status.HTTP_200_OK
 )
-def get_all_languages(db: DbSessionDep) -> list[schemas.LanguageSchema]:
+def get_all_languages(db: DbSessionDep) -> list[models.Language]:
     return lang_service.get_all_languages(db)
 
 
@@ -51,7 +51,7 @@ def get_all_languages(db: DbSessionDep) -> list[schemas.LanguageSchema]:
     response_model=schemas.LanguageSchema,
     status_code=status.HTTP_200_OK,
 )
-def get_language_by_code(lang_code: str, db: DbSessionDep) -> schemas.LanguageSchema:
+def get_language_by_code(lang_code: str, db: DbSessionDep) -> models.Language:
     try:
         lang = lang_service.get_language_by_code(lang_code, db)
     except NotFoundError:

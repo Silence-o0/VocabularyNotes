@@ -103,13 +103,13 @@ class DictListUpdate(BaseModel):
     name: DictListName | None = None
 
 
-WordNameAndTranslation = Annotated[str, Field(min_length=1, max_length=200)]
+WordFieldConstraint = Annotated[str, Field(min_length=1, max_length=200)]
 WordNote = Annotated[str, Field(min_length=1, max_length=800)]
 
 
 class WordCreate(BaseModel):
-    new_word: WordNameAndTranslation
-    translation: WordNameAndTranslation | None = None
+    new_word: WordFieldConstraint
+    translation: WordFieldConstraint | None = None
     note: WordNote | None = None
     lang_code: LanguageCode
     contexts: list[str] | None = None
@@ -123,8 +123,8 @@ class WordCreate(BaseModel):
 class WordResponse(BaseModel):
     id: int
     user_id: UUID
-    new_word: WordNameAndTranslation
-    translation: WordNameAndTranslation | None = None
+    new_word: WordFieldConstraint
+    translation: WordFieldConstraint | None = None
     note: WordNote | None = None
     language: LanguageSchema
     created_at: datetime
