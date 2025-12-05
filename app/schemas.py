@@ -2,8 +2,17 @@ from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, PositiveInt, SecretStr
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    PositiveInt,
+    SecretStr,
+    field_validator,
+)
 
+from app import models
 from app.models import UserRole
 
 
@@ -92,3 +101,53 @@ class DictListUpdate(BaseModel):
 
     lang_code: LanguageCode | None = None
     name: DictListName | None = None
+
+
+WordFieldConstraint = Annotated[str, Field(min_length=1, max_length=200)]
+WordNote = Annotated[str, Field(min_length=1, max_length=800)]
+
+
+class WordCreate(BaseModel):
+    new_word: WordFieldConstraint
+    translation: WordFieldConstraint | None = None
+    note: WordNote | None = None
+    lang_code: LanguageCode
+    contexts: list[str] | None = None
+
+    @field_validator("contexts")
+    @classmethod
+    def strip_and_filter_contexts(cls, values):
+        return [v.strip() for v in values if v.strip()]
+
+
+class WordResponse(BaseModel):
+    id: int
+    user_id: UUID
+    new_word: WordFieldConstraint
+    translation: WordFieldConstraint | None = None
+    note: WordNote | None = None
+    language: LanguageSchema
+    created_at: datetime
+    contexts: list[str] = []
+
+    @field_validator("contexts", mode="before")
+    @classmethod
+    def extract_context_strings(cls, v):
+        if isinstance(v, list) and len(v) > 0 and isinstance(v[0], models.WordContext):
+            return [ctx.context for ctx in v]
+        return v
+
+
+class WordUpdate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    new_word: str | None = None
+    translation: str | None = None
+    note: str | None = None
+    lang_code: str | None = None
+    contexts: list[str] | None = None
+
+    @field_validator("contexts")
+    @classmethod
+    def strip_and_filter_contexts(cls, values):
+        return [v.strip() for v in values if v.strip()]

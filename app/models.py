@@ -138,7 +138,9 @@ class Word(Base):
         "Language", back_populates="words", repr=False
     )
     contexts_list: AssociationProxy[list[str]] = association_proxy(
-        "contexts", "context"
+        "contexts",
+        "context",
+        init=False,
     )
     translation: Mapped[str | None] = mapped_column(default=None)
     note: Mapped[str | None] = mapped_column(default=None)
@@ -150,7 +152,11 @@ class Word(Base):
         repr=False,
     )
     contexts: Mapped[list[WordContext]] = relationship(
-        "WordContext", back_populates="word", init=False, repr=False
+        "WordContext",
+        back_populates="word",
+        init=False,
+        repr=False,
+        cascade="all, delete-orphan",
     )
 
 

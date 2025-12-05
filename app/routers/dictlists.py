@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app import schemas
+from app import models, schemas
 from app.dependencies import CurrentUserDep, DbSessionDep
 from app.exceptions import NotFoundError
 from app.services import dictlists as dictlist_service
@@ -16,7 +16,7 @@ def create_dictlist(
     dictlist: schemas.DictListCreate,
     db: DbSessionDep,
     current_user: CurrentUserDep,
-) -> schemas.DictListResponse:
+) -> models.DictList:
     try:
         dictlist = dictlist_service.create_dictlist(dictlist, current_user, db)
     except (ValueError, NotFoundError):
@@ -31,7 +31,7 @@ def create_dictlist(
     response_model=list[schemas.DictListResponse],
     status_code=status.HTTP_200_OK,
 )
-def get_all_dictlists(current_user: CurrentUserDep) -> list[schemas.DictListResponse]:
+def get_all_dictlists(current_user: CurrentUserDep) -> list[models.DictList]:
     return current_user.dict_lists
 
 
@@ -42,7 +42,7 @@ def get_all_dictlists(current_user: CurrentUserDep) -> list[schemas.DictListResp
 )
 def get_user_dictlist_by_id(
     dictlist_id: int, db: DbSessionDep, current_user: CurrentUserDep
-) -> schemas.DictListResponse:
+) -> models.DictList:
     try:
         dictlist = dictlist_service.get_dictlist_by_id(dictlist_id, db)
         if dictlist.user_id != current_user.id:
@@ -53,7 +53,7 @@ def get_user_dictlist_by_id(
 
 
 @router.delete("/{dictlist_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_language(
+def delete_dictlist(
     dictlist_id: int, db: DbSessionDep, current_user: CurrentUserDep
 ) -> None:
     try:
@@ -75,7 +75,7 @@ def update_dictlist(
     body: schemas.DictListUpdate,
     db: DbSessionDep,
     current_user: CurrentUserDep,
-) -> schemas.DictListResponse:
+) -> models.DictList:
     try:
         dictlist = dictlist_service.get_dictlist_by_id(dictlist_id, db)
         if dictlist.user_id != current_user.id:
