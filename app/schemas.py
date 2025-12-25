@@ -151,3 +151,7 @@ class WordUpdate(BaseModel):
     @classmethod
     def strip_and_filter_contexts(cls, values):
         return [v.strip() for v in values if v.strip()]
+
+
+class AssignWordsRequest(BaseModel):
+    word_ids: list[int]

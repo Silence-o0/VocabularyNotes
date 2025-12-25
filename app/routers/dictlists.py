@@ -5,6 +5,7 @@ from app.dependencies import CurrentUserDep, DbSessionDep
 from app.exceptions import NotFoundError
 from app.services import dictlists as dictlist_service
 from app.services import languages as lang_service
+from app.services import words as words_service
 
 router = APIRouter(prefix="/dictlists", tags=["dictlists"])
 
@@ -107,3 +108,38 @@ def update_dictlist(
             status_code=status.HTTP_404_NOT_FOUND,
         ) from None
     return dictlist
+
+
+@router.post("/{dictlist_id}/assign-words", status_code=status.HTTP_204_NO_CONTENT)
+def assign_word_to_dictlist(
+    dictlist_id: int,
+    words_body: schemas.AssignWordsRequest,
+    db: DbSessionDep,
+    current_user: CurrentUserDep,
+):
+    try:
+        dictlist = dictlist_service.get_dictlist_by_id(dictlist_id, db)
+        if dictlist.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not words_body.word_ids:
+            raise ValueError
+
+        words = [words_service.get_word_by_id(word_id, db) for word_id in words_body.word_ids]
+        existing_word_ids = {word.id for word in dictlist.words}
+        new_words = [word for word in words if word.id not in existing_word_ids]
+
+        for word in new_words:
+            if word.user_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                )
+
+        dictlist.words.extend(new_words)
+        db.commit()
+    except (ValueError, NotFoundError):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+        ) from None

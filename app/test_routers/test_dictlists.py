@@ -151,3 +151,26 @@ class TestUpdateDictList:
             f"/dictlists/{another_user_dictlist.id}", json={"name": "Name"}
         )
         assert response.status_code == 403
+
+class TestAssignDictListToWords:
+    """POST /dictlists/{dictlist_id}/assign-words"""
+
+    def test_assign_word_to_dictlist(self, authorized_client, dictlist, word, db_session):
+        response = authorized_client.post(
+            f"/dictlists/{dictlist.id}/assign-words",
+            json={"word_ids": [word.id]}
+        )
+        assert response.status_code == 204
+        db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
+        assert len(db_dictlist.words) == 1
+        assert db_dictlist.words[0].id == word.id
+
+    def test_assign_empty_wordlist(self, authorized_client, dictlist, db_session):
+        response = authorized_client.post(
+            f"/dictlists/{dictlist.id}/assign-words",
+            json={"word_ids": []}
+        )
+        assert response.status_code == 400
+        db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
+        assert len(db_dictlist.words) == 0
+
