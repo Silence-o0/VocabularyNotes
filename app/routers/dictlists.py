@@ -127,6 +127,15 @@ def assign_word_to_dictlist(
             word for word in word_list if word.id not in existing_word_ids
         ]
 
+        current_count = len(dictlist.words)
+        new_word_count = len(words_to_assign)
+
+        if (
+            dictlist.max_words_limit is not None
+            and current_count + new_word_count > dictlist.max_words_limit
+        ):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+
         dictlist.words.extend(words_to_assign)
         db.commit()
     except (ValueError, NotFoundError):
