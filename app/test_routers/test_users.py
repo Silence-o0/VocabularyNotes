@@ -234,6 +234,15 @@ class TestGetAllUsers:
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
+    def test_admin_can_get_users_filter_by_role(
+        self, authorized_client_as_admin, another_user
+    ):
+        response = authorized_client_as_admin.get("/users/?role=1")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["username"] == another_user.username
+
     def test_non_admin_cannot_get_all_users(self, authorized_client):
         response = authorized_client.get("/users/")
         assert response.status_code == 403

@@ -1,11 +1,10 @@
 from fastapi import APIRouter, HTTPException, status
 
 from app import models, schemas
-from app.dependencies import CurrentUserDep, DbSessionDep
+from app.dependencies import CurrentUserDep, DbSessionDep, DictlistFiltersDep
 from app.exceptions import ForbiddenError, NotFoundError
 from app.services import dictlists as dictlist_service
 from app.services import languages as lang_service
-from app.services import words as word_service
 
 router = APIRouter(prefix="/dictlists", tags=["dictlists"])
 
@@ -32,8 +31,10 @@ def create_dictlist(
     response_model=list[schemas.DictListResponse],
     status_code=status.HTTP_200_OK,
 )
-def get_all_dictlists(current_user: CurrentUserDep) -> list[models.DictList]:
-    return current_user.dict_lists
+def get_all_dictlists(
+    filters: DictlistFiltersDep, db: DbSessionDep, current_user: CurrentUserDep
+) -> list[models.DictList]:
+    return dictlist_service.get_all_dictlists_with_filters(filters, current_user.id, db)
 
 
 @router.get(
@@ -122,7 +123,9 @@ def assign_word_to_dictlist(
             dictlist_id, words_body.word_ids, current_user.id, db
         )
         existing_word_ids = {word.id for word in dictlist.words}
-        words_to_assign = [word for word in word_list if word.id not in existing_word_ids]
+        words_to_assign = [
+            word for word in word_list if word.id not in existing_word_ids
+        ]
 
         dictlist.words.extend(words_to_assign)
         db.commit()

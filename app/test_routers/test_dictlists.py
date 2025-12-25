@@ -66,6 +66,33 @@ class TestGetAllDictLists:
         response = client.get("/dictlists/")
         assert response.status_code == 403
 
+    def test_get_dictlists_filter_by_lang_code(self, authorized_client, dictlist):
+        response = authorized_client.get(f"/dictlists/?lang_code={dictlist.lang_code}")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["id"] == dictlist.id
+
+        response = authorized_client.get("/dictlists/?lang_code=fr-FR")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_get_dictlists_filter_by_word(
+        self, authorized_client, word, dictlist, db_session
+    ):
+        dictlist.words.append(word)
+        db_session.commit()
+
+        response = authorized_client.get(f"/dictlists/?word_id={word.id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["id"] == dictlist.id
+
+        response = authorized_client.get("/dictlists/?word_id=9999")
+        assert response.status_code == 200
+        assert response.json() == []
+
 
 class TestGetDictListById:
     """GET /dictlists/{dictlist_id}"""
