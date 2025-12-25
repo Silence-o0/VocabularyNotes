@@ -56,10 +56,7 @@ class TestCreateDictList:
 class TestGetAllDictLists:
     """GET /dictlists/"""
 
-    def test_get_all_user_dictlists(self, authorized_client, another_user, db_session):
-        dictlist_service.create_dictlist(
-            schemas.DictListCreate(name="My Vocabulary"), another_user, db_session
-        )
+    def test_get_all_user_dictlists(self, authorized_client, another_user_dictlist):
         response = authorized_client.get("/dictlists/")
         assert response.status_code == 200
         assert response.json() == []
@@ -84,12 +81,9 @@ class TestGetDictListById:
         assert response.status_code == 404
 
     def test_get_dictlist_by_id_forbidden(
-        self, authorized_client, another_user, db_session
+        self, authorized_client, another_user_dictlist
     ):
-        dictlist = dictlist_service.create_dictlist(
-            schemas.DictListCreate(name="My Vocabulary"), another_user, db_session
-        )
-        response = authorized_client.get(f"/dictlists/{dictlist.id}")
+        response = authorized_client.get(f"/dictlists/{another_user_dictlist.id}")
         assert response.status_code == 403
 
 
@@ -108,12 +102,9 @@ class TestDeleteDictList:
         assert response.status_code == 404
 
     def test_delete_dictlist_forbidden(
-        self, authorized_client, another_user, db_session
+        self, authorized_client, another_user_dictlist, db_session
     ):
-        dictlist = dictlist_service.create_dictlist(
-            schemas.DictListCreate(name="My Vocabulary"), another_user, db_session
-        )
-        response = authorized_client.delete(f"/dictlists/{dictlist.id}")
+        response = authorized_client.delete(f"/dictlists/{another_user_dictlist.id}")
         assert response.status_code == 403
 
 
@@ -155,13 +146,8 @@ class TestUpdateDictList:
         )
         assert response.status_code == 404
 
-    def test_update_dictlist_other_user(
-        self, authorized_client, another_user, db_session
-    ):
-        dictlist = dictlist_service.create_dictlist(
-            schemas.DictListCreate(name="My Vocabulary"), another_user, db_session
-        )
+    def test_update_dictlist_other_user(self, authorized_client, another_user_dictlist):
         response = authorized_client.patch(
-            f"/dictlists/{dictlist.id}", json={"name": "Name"}
+            f"/dictlists/{another_user_dictlist.id}", json={"name": "Name"}
         )
         assert response.status_code == 403

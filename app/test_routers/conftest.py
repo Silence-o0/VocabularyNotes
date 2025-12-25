@@ -12,6 +12,7 @@ from app.models import Base
 from app.services import dictlists as dictlist_service
 from app.services import languages as lang_service
 from app.services import users as user_service
+from app.services import words as word_service
 from app.utils.auth_utils import create_access_token
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -120,3 +121,40 @@ def dictlist(user, language, db_session):
         db_session,
     )
     return dictlist
+
+
+@pytest.fixture
+def another_user_dictlist(another_user, language, db_session):
+    dictlist = dictlist_service.create_dictlist(
+        schemas.DictListCreate(name="My Vocabulary", lang_code="en-UK"),
+        another_user,
+        db_session,
+    )
+    return dictlist
+
+
+@pytest.fixture
+def word(user, language, db_session):
+    word = word_service.create_word(
+        schemas.WordCreate(
+            new_word="animal",
+            lang_code="en-UK",
+            contexts=[
+                "Wild animals live in the forest",
+                "My favorite animal is a dog",
+            ],
+        ),
+        user,
+        db_session,
+    )
+    return word
+
+
+@pytest.fixture
+def another_user_word(another_user, language, db_session):
+    word = word_service.create_word(
+        schemas.WordCreate(new_word="animal", lang_code="en-UK"),
+        another_user,
+        db_session,
+    )
+    return word

@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 
-from app import schemas
+from app import models, schemas
 from app.constants import VERIFY_TOKEN_EXPIRE_MINUTES
 from app.dependencies import AdminRoleDep, CurrentUserDep, DbSessionDep
 from app.exceptions import AlreadyExistsError, NotFoundError
@@ -21,7 +21,7 @@ def create_user(
     background_tasks: BackgroundTasks,
     request: Request,
     db: DbSessionDep,
-) -> schemas.UserResponse:
+) -> models.User:
     try:
         user = user_service.create_user(user, db)
     except ValueError:
@@ -45,7 +45,7 @@ def create_user(
 
 
 @router.get("/me", response_model=schemas.UserResponse, status_code=status.HTTP_200_OK)
-def get_current_user(current_user: CurrentUserDep) -> schemas.UserResponse:
+def get_current_user(current_user: CurrentUserDep) -> models.User:
     return current_user
 
 
@@ -121,9 +121,7 @@ def delete_current_user(current_user: CurrentUserDep, db: DbSessionDep) -> None:
 @router.get(
     "/", response_model=list[schemas.UserResponse], status_code=status.HTTP_200_OK
 )
-def get_all_users(
-    db: DbSessionDep, current_user: AdminRoleDep
-) -> list[schemas.UserResponse]:
+def get_all_users(db: DbSessionDep, current_user: AdminRoleDep) -> list[models.User]:
     return user_service.get_all_users(db)
 
 
@@ -134,7 +132,7 @@ def get_all_users(
 )
 def get_user_by_id(
     user_id: UUID, db: DbSessionDep, current_user: AdminRoleDep
-) -> schemas.UserResponse:
+) -> models.User:
     try:
         user = user_service.get_user_by_id(user_id, db)
     except NotFoundError:
