@@ -3,6 +3,7 @@ import pytest
 from app import schemas
 from app.exceptions import NotFoundError
 from app.services import dictlists as dictlist_service
+from app.services import words as word_service
 
 
 class TestCreateDictList:
@@ -152,25 +153,60 @@ class TestUpdateDictList:
         )
         assert response.status_code == 403
 
+
 class TestAssignDictListToWords:
     """POST /dictlists/{dictlist_id}/assign-words"""
 
-    def test_assign_word_to_dictlist(self, authorized_client, dictlist, word, db_session):
+    def test_assign_word_to_dictlist(
+        self, authorized_client, dictlist, word, db_session
+    ):
         response = authorized_client.post(
-            f"/dictlists/{dictlist.id}/assign-words",
-            json={"word_ids": [word.id]}
+            f"/dictlists/{dictlist.id}/assign-words", json={"word_ids": [word.id]}
         )
         assert response.status_code == 204
         db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
+        db_word = word_service.get_word_by_id(word.id, db_session)
         assert len(db_dictlist.words) == 1
+        assert len(db_word.dict_lists) == 1
         assert db_dictlist.words[0].id == word.id
+        assert db_word.dict_lists[0].id == dictlist.id
 
     def test_assign_empty_wordlist(self, authorized_client, dictlist, db_session):
         response = authorized_client.post(
-            f"/dictlists/{dictlist.id}/assign-words",
-            json={"word_ids": []}
+            f"/dictlists/{dictlist.id}/assign-words", json={"word_ids": []}
         )
         assert response.status_code == 400
         db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
         assert len(db_dictlist.words) == 0
 
+
+class TestUnassignDictListFromWords:
+    """POST /dictlists/{dictlist_id}/unassign-words"""
+
+    def test_unassign_word_from_dictlist(
+        self, authorized_client, dictlist, word, db_session
+    ):
+        dictlist.words.append(word)
+        db_session.commit()
+
+        response = authorized_client.post(
+            f"/dictlists/{dictlist.id}/unassign-words",
+            json={"word_ids": [word.id]},
+        )
+        assert response.status_code == 204
+        db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
+        assert len(db_dictlist.words) == 0
+
+    def test_unassign_empty_wordlist(
+        self,
+        authorized_client,
+        dictlist,
+        db_session,
+    ):
+        response = authorized_client.post(
+            f"/dictlists/{dictlist.id}/unassign-words",
+            json={"word_ids": []},
+        )
+        assert response.status_code == 400
+        db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
+        assert len(db_dictlist.words) == 0
