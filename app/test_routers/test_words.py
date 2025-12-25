@@ -102,6 +102,33 @@ class TestGetAllWords:
         response = client.get("/words/")
         assert response.status_code == 403
 
+    def test_get_words_filter_by_lang_code(self, authorized_client, word):
+        response = authorized_client.get(f"/words/?lang_code={word.lang_code}")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["id"] == word.id
+
+        response = authorized_client.get("/words/?lang_code=fr-FR")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_get_words_filter_by_dictlist(
+        self, authorized_client, word, dictlist, db_session
+    ):
+        dictlist.words.append(word)
+        db_session.commit()
+
+        response = authorized_client.get(f"/words/?dictlist_id={dictlist.id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["id"] == word.id
+
+        response = authorized_client.get("/words/?dictlist_id=9999")
+        assert response.status_code == 200
+        assert response.json() == []
+
 
 class TestDeleteWord:
     """DELETE /words/{word_id}"""

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 
 from app import models, schemas
-from app.dependencies import CurrentUserDep, DbSessionDep
+from app.dependencies import CurrentUserDep, DbSessionDep, WordFiltersDep
 from app.exceptions import NotFoundError
 from app.services import languages as lang_service
 from app.services import words as word_service
@@ -48,8 +48,10 @@ def get_user_word_by_id(
     response_model=list[schemas.WordResponse],
     status_code=status.HTTP_200_OK,
 )
-def get_all_words(current_user: CurrentUserDep) -> list[models.Word]:
-    return current_user.words
+def get_all_words(
+    filters: WordFiltersDep, db: DbSessionDep, current_user: CurrentUserDep
+) -> list[models.Word]:
+    return word_service.get_all_words_with_filters(filters, current_user.id, db)
 
 
 @router.delete("/{word_id}", status_code=status.HTTP_204_NO_CONTENT)
