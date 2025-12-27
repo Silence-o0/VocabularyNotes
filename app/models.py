@@ -121,6 +121,22 @@ class DictList(Base):
         repr=False,
     )
 
+    def add_words(self, words: list[Word]) -> None:
+        existing_ids = {word.id for word in self.words}
+        new_words = [word for word in words if word.id not in existing_ids]
+
+        if self.max_words_limit is not None:
+            if len(self.words) + len(new_words) > self.max_words_limit:
+                raise ValueError
+        self.words.extend(new_words)
+
+    def remove_words(self, words: list[Word]) -> None:
+        existing_ids = {word.id for word in self.words}
+        words_to_remove = [word for word in words if word.id in existing_ids]
+
+        for word in words_to_remove:
+            self.words.remove(word)
+
 
 class Word(Base):
     id: Mapped[int] = mapped_column(primary_key=True, init=False)

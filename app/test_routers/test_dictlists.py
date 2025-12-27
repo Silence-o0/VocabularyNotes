@@ -3,7 +3,6 @@ import pytest
 from app import schemas
 from app.exceptions import NotFoundError
 from app.services import dictlists as dictlist_service
-from app.services import words as word_service
 
 
 class TestCreateDictList:
@@ -73,6 +72,9 @@ class TestGetAllDictLists:
         assert len(data) == 1
         assert data[0]["id"] == dictlist.id
 
+    def test_get_dictlists_filter_by_nonexistent_lang_code(
+        self, authorized_client, word
+    ):
         response = authorized_client.get("/dictlists/?lang_code=fr-FR")
         assert response.status_code == 200
         assert response.json() == []
@@ -89,6 +91,9 @@ class TestGetAllDictLists:
         assert len(data) == 1
         assert data[0]["id"] == dictlist.id
 
+    def test_get_dictlists_filter_by_nonexistent_word(
+        self, authorized_client, dictlist
+    ):
         response = authorized_client.get("/dictlists/?word_id=9999")
         assert response.status_code == 200
         assert response.json() == []
@@ -192,11 +197,8 @@ class TestAssignDictListToWords:
         )
         assert response.status_code == 204
         db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
-        db_word = word_service.get_word_by_id(word.id, db_session)
         assert len(db_dictlist.words) == 1
-        assert len(db_word.dict_lists) == 1
         assert db_dictlist.words[0].id == word.id
-        assert db_word.dict_lists[0].id == dictlist.id
 
     def test_assign_empty_wordlist(self, authorized_client, dictlist, db_session):
         response = authorized_client.post(

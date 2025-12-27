@@ -230,7 +230,6 @@ class TestGetAllUsers:
 
     def test_admin_can_get_all_users(self, authorized_client_as_admin):
         response = authorized_client_as_admin.get("/users/")
-
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 

@@ -48,7 +48,7 @@ def get_user_by_email(email: str, db: Session):
 def get_all_users(filters: UserFilter, db: Session):
     query = select(models.User)
     if filters.role:
-        query = query.filter(models.User.role == filters.role)
+        query = query.where(models.User.role == filters.role)
     return db.scalars(query).all()
 
 

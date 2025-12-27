@@ -5,6 +5,7 @@ from app.dependencies import CurrentUserDep, DbSessionDep, DictlistFiltersDep
 from app.exceptions import ForbiddenError, NotFoundError
 from app.services import dictlists as dictlist_service
 from app.services import languages as lang_service
+from app.services import words as word_service
 
 router = APIRouter(prefix="/dictlists", tags=["dictlists"])
 
@@ -119,24 +120,18 @@ def assign_word_to_dictlist(
     current_user: CurrentUserDep,
 ):
     try:
-        dictlist, word_list = dictlist_service.words_to_dictlist(
-            dictlist_id, words_body.word_ids, current_user.id, db
+        if not words_body.word_ids:
+            raise ValueError
+
+        dictlist = dictlist_service.get_own_dictlist_by_id(
+            dictlist_id, current_user.id, db
         )
-        existing_word_ids = {word.id for word in dictlist.words}
-        words_to_assign = [
-            word for word in word_list if word.id not in existing_word_ids
+        words = [
+            word_service.get_own_word_by_id(word_id, current_user.id, db)
+            for word_id in words_body.word_ids
         ]
 
-        current_count = len(dictlist.words)
-        new_word_count = len(words_to_assign)
-
-        if (
-            dictlist.max_words_limit is not None
-            and current_count + new_word_count > dictlist.max_words_limit
-        ):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
-
-        dictlist.words.extend(words_to_assign)
+        dictlist.add_words(words)
         db.commit()
     except (ValueError, NotFoundError):
         raise HTTPException(
@@ -156,14 +151,18 @@ def unassign_words_from_dictlist(
     current_user: CurrentUserDep,
 ):
     try:
-        dictlist, word_list = dictlist_service.words_to_dictlist(
-            dictlist_id, words_body.word_ids, current_user.id, db
-        )
-        existing_word_ids = {word.id for word in dictlist.words}
-        words_to_remove = [word for word in word_list if word.id in existing_word_ids]
+        if not words_body.word_ids:
+            raise ValueError
 
-        for word in words_to_remove:
-            dictlist.words.remove(word)
+        dictlist = dictlist_service.get_own_dictlist_by_id(
+            dictlist_id, current_user.id, db
+        )
+        words = [
+            word_service.get_own_word_by_id(word_id, current_user.id, db)
+            for word_id in words_body.word_ids
+        ]
+
+        dictlist.remove_words(words)
         db.commit()
     except (ValueError, NotFoundError):
         raise HTTPException(

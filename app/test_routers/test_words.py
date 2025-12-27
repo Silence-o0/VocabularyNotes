@@ -109,6 +109,7 @@ class TestGetAllWords:
         assert len(data) == 1
         assert data[0]["id"] == word.id
 
+    def test_get_words_filter_by_nonexistent_lang_code(self, authorized_client, word):
         response = authorized_client.get("/words/?lang_code=fr-FR")
         assert response.status_code == 200
         assert response.json() == []
@@ -125,6 +126,7 @@ class TestGetAllWords:
         assert len(data) == 1
         assert data[0]["id"] == word.id
 
+    def test_get_words_filter_by_nonexistent_dictlist(self, authorized_client, word):
         response = authorized_client.get("/words/?dictlist_id=9999")
         assert response.status_code == 200
         assert response.json() == []
