@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app import filters_schemas, models
 from app.database import get_db
 from app.exceptions import NotFoundError
+from app.services import users
 from app.utils.auth_utils import auth_scheme, jwt_decode
 
 DbSessionDep = Annotated[Session, Depends(get_db)]
@@ -16,8 +17,6 @@ TokenDep = Annotated[HTTPBearer, Depends(auth_scheme)]
 
 
 def current_user(token: TokenDep, db: DbSessionDep):
-    from app.services import users
-
     try:
         user_id = uuid.UUID(jwt_decode(token.credentials))
         user = users.get_user_by_id(user_id, db)

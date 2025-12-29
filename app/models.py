@@ -122,8 +122,7 @@ class DictList(Base):
     )
 
     def add_words(self, words: list[Word]) -> None:
-        existing_ids = {word.id for word in self.words}
-        new_words = [word for word in words if word.id not in existing_ids]
+        new_words = set(words) - set(self.words)
 
         if self.max_words_limit is not None:
             if len(self.words) + len(new_words) > self.max_words_limit:
@@ -131,9 +130,7 @@ class DictList(Base):
         self.words.extend(new_words)
 
     def remove_words(self, words: list[Word]) -> None:
-        existing_ids = {word.id for word in self.words}
-        words_to_remove = [word for word in words if word.id in existing_ids]
-
+        words_to_remove = set(words)
         for word in words_to_remove:
             self.words.remove(word)
 
@@ -174,6 +171,9 @@ class Word(Base):
         repr=False,
         cascade="all, delete-orphan",
     )
+
+    def __hash__(self):
+        return id(self)
 
 
 class WordContext(Base):

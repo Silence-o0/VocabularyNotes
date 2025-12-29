@@ -204,7 +204,7 @@ class TestAssignDictListToWords:
         response = authorized_client.post(
             f"/dictlists/{dictlist.id}/assign-words", json={"word_ids": []}
         )
-        assert response.status_code == 400
+        assert response.status_code == 422
         db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
         assert len(db_dictlist.words) == 0
 
@@ -236,6 +236,6 @@ class TestUnassignDictListFromWords:
             f"/dictlists/{dictlist.id}/unassign-words",
             json={"word_ids": []},
         )
-        assert response.status_code == 400
+        assert response.status_code == 422
         db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
         assert len(db_dictlist.words) == 0

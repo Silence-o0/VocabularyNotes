@@ -120,9 +120,6 @@ def assign_word_to_dictlist(
     current_user: CurrentUserDep,
 ):
     try:
-        if not words_body.word_ids:
-            raise ValueError
-
         dictlist = dictlist_service.get_own_dictlist_by_id(
             dictlist_id, current_user.id, db
         )
@@ -133,13 +130,17 @@ def assign_word_to_dictlist(
 
         dictlist.add_words(words)
         db.commit()
-    except (ValueError, NotFoundError):
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
         ) from None
     except ForbiddenError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
+        ) from None
+    except NotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
         ) from None
 
 
@@ -151,9 +152,6 @@ def unassign_words_from_dictlist(
     current_user: CurrentUserDep,
 ):
     try:
-        if not words_body.word_ids:
-            raise ValueError
-
         dictlist = dictlist_service.get_own_dictlist_by_id(
             dictlist_id, current_user.id, db
         )
@@ -164,11 +162,15 @@ def unassign_words_from_dictlist(
 
         dictlist.remove_words(words)
         db.commit()
-    except (ValueError, NotFoundError):
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
         ) from None
     except ForbiddenError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
+        ) from None
+    except NotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
         ) from None

@@ -154,4 +154,5 @@ class WordUpdate(BaseModel):
 
 
 class AssignWordsRequest(BaseModel):
-    word_ids: list[int]
+    # word_ids: list[int]
+    word_ids: list[int] = Field(min_length=1)
