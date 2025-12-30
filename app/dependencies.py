@@ -3,9 +3,10 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer
+from fastapi_filter import FilterDepends
 from sqlalchemy.orm import Session
 
-from app import models
+from app import filters_schemas, models
 from app.database import get_db
 from app.exceptions import NotFoundError
 from app.services import users
@@ -50,3 +51,14 @@ def authorized_required(current_user: CurrentUserDep):
 AdminRoleDep = Annotated[models.User, Depends(admin_required)]
 FullAccessDep = Annotated[models.User, Depends(full_access_required)]
 AuthorizedDep = Annotated[models.User, Depends(authorized_required)]
+
+
+UserFiltersDep = Annotated[
+    filters_schemas.UserFilter, FilterDepends(filters_schemas.UserFilter)
+]
+DictlistFiltersDep = Annotated[
+    filters_schemas.DictListFilter, FilterDepends(filters_schemas.DictListFilter)
+]
+WordFiltersDep = Annotated[
+    filters_schemas.WordFilter, FilterDepends(filters_schemas.WordFilter)
+]

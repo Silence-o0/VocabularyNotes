@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, status
 
 from app import models, schemas
-from app.dependencies import CurrentUserDep, DbSessionDep
-from app.exceptions import NotFoundError
+from app.dependencies import CurrentUserDep, DbSessionDep, DictlistFiltersDep
+from app.exceptions import ForbiddenError, NotFoundError
 from app.services import dictlists as dictlist_service
 from app.services import languages as lang_service
+from app.services import words as word_service
 
 router = APIRouter(prefix="/dictlists", tags=["dictlists"])
 
@@ -31,8 +32,10 @@ def create_dictlist(
     response_model=list[schemas.DictListResponse],
     status_code=status.HTTP_200_OK,
 )
-def get_all_dictlists(current_user: CurrentUserDep) -> list[models.DictList]:
-    return current_user.dict_lists
+def get_all_dictlists(
+    filters: DictlistFiltersDep, db: DbSessionDep, current_user: CurrentUserDep
+) -> list[models.DictList]:
+    return dictlist_service.get_all_dictlists_with_filters(filters, current_user.id, db)
 
 
 @router.get(
@@ -107,3 +110,67 @@ def update_dictlist(
             status_code=status.HTTP_404_NOT_FOUND,
         ) from None
     return dictlist
+
+
+@router.post("/{dictlist_id}/assign-words", status_code=status.HTTP_204_NO_CONTENT)
+def assign_word_to_dictlist(
+    dictlist_id: int,
+    words_body: schemas.AssignWordsRequest,
+    db: DbSessionDep,
+    current_user: CurrentUserDep,
+):
+    try:
+        dictlist = dictlist_service.get_own_dictlist_by_id(
+            dictlist_id, current_user.id, db
+        )
+        words = [
+            word_service.get_own_word_by_id(word_id, current_user.id, db)
+            for word_id in words_body.word_ids
+        ]
+
+        dictlist.add_words(words)
+        db.commit()
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+        ) from None
+    except ForbiddenError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+        ) from None
+    except NotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+        ) from None
+
+
+@router.post("/{dictlist_id}/unassign-words", status_code=status.HTTP_204_NO_CONTENT)
+def unassign_words_from_dictlist(
+    dictlist_id: int,
+    words_body: schemas.AssignWordsRequest,
+    db: DbSessionDep,
+    current_user: CurrentUserDep,
+):
+    try:
+        dictlist = dictlist_service.get_own_dictlist_by_id(
+            dictlist_id, current_user.id, db
+        )
+        words = [
+            word_service.get_own_word_by_id(word_id, current_user.id, db)
+            for word_id in words_body.word_ids
+        ]
+
+        dictlist.remove_words(words)
+        db.commit()
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+        ) from None
+    except ForbiddenError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+        ) from None
+    except NotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+        ) from None

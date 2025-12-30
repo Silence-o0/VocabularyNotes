@@ -121,6 +121,19 @@ class DictList(Base):
         repr=False,
     )
 
+    def add_words(self, words: list[Word]) -> None:
+        new_words = set(words) - set(self.words)
+
+        if self.max_words_limit is not None:
+            if len(self.words) + len(new_words) > self.max_words_limit:
+                raise ValueError
+        self.words.extend(new_words)
+
+    def remove_words(self, words: list[Word]) -> None:
+        words_to_remove = set(words)
+        for word in words_to_remove:
+            self.words.remove(word)
+
 
 class Word(Base):
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
@@ -158,6 +171,9 @@ class Word(Base):
         repr=False,
         cascade="all, delete-orphan",
     )
+
+    def __hash__(self):
+        return id(self)
 
 
 class WordContext(Base):

@@ -1,8 +1,12 @@
+from uuid import UUID
+
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.exceptions import AlreadyExistsError, NotFoundError
+from app.exceptions import AlreadyExistsError, ForbiddenError, NotFoundError
+from app.filters_schemas import WordFilter
 from app.services import languages as lang_services
 
 
@@ -29,6 +33,27 @@ def create_word(word: schemas.WordCreate, user: models.User, db: Session):
     except IntegrityError:
         db.rollback()
         raise AlreadyExistsError from None
+
+
+def get_own_word_by_id(word_id: int, user_id: UUID, db: Session) -> models.Word:
+    word = get_word_by_id(word_id, db)
+    if word.user_id != user_id:
+        raise ForbiddenError
+    return word
+
+
+def get_all_words_with_filters(filters: WordFilter, user_id: UUID, db: Session):
+    query = select(models.Word).where(models.Word.user_id == user_id)
+
+    if filters.lang_code:
+        query = query.where(models.Word.lang_code == filters.lang_code)
+
+    if filters.dictlist_id:
+        query = query.where(
+            models.Word.dict_lists.any(models.DictList.id == filters.dictlist_id)
+        )
+
+    return db.scalars(query).all()
 
 
 def get_word_by_id(word_id: int, db: Session):

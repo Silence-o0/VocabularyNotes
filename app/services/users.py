@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.exceptions import AlreadyExistsError, NotFoundError
+from app.filters_schemas import UserFilter
 from app.utils.auth_utils import pwd_context
 
 
@@ -44,8 +45,11 @@ def get_user_by_email(email: str, db: Session):
     return user
 
 
-def get_all_users(db: Session):
-    return db.scalars(select(models.User)).all()
+def get_all_users(filters: UserFilter, db: Session):
+    query = select(models.User)
+    if filters.role:
+        query = query.where(models.User.role == filters.role)
+    return db.scalars(query).all()
 
 
 def delete_user(user, db: Session):

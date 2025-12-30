@@ -65,6 +65,39 @@ class TestGetAllDictLists:
         response = client.get("/dictlists/")
         assert response.status_code == 403
 
+    def test_get_dictlists_filter_by_lang_code(self, authorized_client, dictlist):
+        response = authorized_client.get(f"/dictlists/?lang_code={dictlist.lang_code}")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["id"] == dictlist.id
+
+    def test_get_dictlists_filter_by_nonexistent_lang_code(
+        self, authorized_client, word
+    ):
+        response = authorized_client.get("/dictlists/?lang_code=fr-FR")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_get_dictlists_filter_by_word(
+        self, authorized_client, word, dictlist, db_session
+    ):
+        dictlist.words.append(word)
+        db_session.commit()
+
+        response = authorized_client.get(f"/dictlists/?word_id={word.id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["id"] == dictlist.id
+
+    def test_get_dictlists_filter_by_nonexistent_word(
+        self, authorized_client, dictlist
+    ):
+        response = authorized_client.get("/dictlists/?word_id=9999")
+        assert response.status_code == 200
+        assert response.json() == []
+
 
 class TestGetDictListById:
     """GET /dictlists/{dictlist_id}"""
@@ -151,3 +184,58 @@ class TestUpdateDictList:
             f"/dictlists/{another_user_dictlist.id}", json={"name": "Name"}
         )
         assert response.status_code == 403
+
+
+class TestAssignDictListToWords:
+    """POST /dictlists/{dictlist_id}/assign-words"""
+
+    def test_assign_word_to_dictlist(
+        self, authorized_client, dictlist, word, db_session
+    ):
+        response = authorized_client.post(
+            f"/dictlists/{dictlist.id}/assign-words", json={"word_ids": [word.id]}
+        )
+        assert response.status_code == 204
+        db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
+        assert len(db_dictlist.words) == 1
+        assert db_dictlist.words[0].id == word.id
+
+    def test_assign_empty_wordlist(self, authorized_client, dictlist, db_session):
+        response = authorized_client.post(
+            f"/dictlists/{dictlist.id}/assign-words", json={"word_ids": []}
+        )
+        assert response.status_code == 422
+        db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
+        assert len(db_dictlist.words) == 0
+
+
+class TestUnassignDictListFromWords:
+    """POST /dictlists/{dictlist_id}/unassign-words"""
+
+    def test_unassign_word_from_dictlist(
+        self, authorized_client, dictlist, word, db_session
+    ):
+        dictlist.words.append(word)
+        db_session.commit()
+
+        response = authorized_client.post(
+            f"/dictlists/{dictlist.id}/unassign-words",
+            json={"word_ids": [word.id]},
+        )
+        assert response.status_code == 204
+        db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
+        assert len(db_dictlist.words) == 0
+
+    def test_unassign_empty_wordlist(
+        self,
+        authorized_client,
+        dictlist,
+        db_session,
+    ):
+        response = authorized_client.post(
+            f"/dictlists/{dictlist.id}/unassign-words",
+            json={"word_ids": []},
+        )
+        assert response.status_code == 422
+        db_dictlist = dictlist_service.get_dictlist_by_id(dictlist.id, db_session)
+        assert len(db_dictlist.words) == 0
